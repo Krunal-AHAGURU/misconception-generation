@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -45,22 +45,31 @@ interface MCQ {
 
 // --- Components ---
 
-const Header = ({ onShowVotes }: { onShowVotes: () => void }) => (
-  <header className="h-12 border-b border-slate-200 flex items-center justify-between px-4 bg-white shrink-0 sticky top-0 z-50 shadow-sm">
-    <div className="flex items-center gap-3">
-      <div className="bg-brand text-white font-extrabold p-1 rounded text-[10px] px-2 select-none tracking-tighter">AHAGURU</div>
-      <h1 className="font-bold text-base text-slate-800 tracking-tight">MCQ Reasoning Assistant</h1>
-      <span className="bg-slate-100 text-slate-500 text-[9px] px-2 py-0.5 rounded uppercase font-bold tracking-widest hidden sm:inline-block border border-slate-200">INTERNAL VALIDATION v2.0</span>
+const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen }: { onShowVotes: () => void, onToggleSidebar: () => void, isSidebarOpen: boolean }) => (
+  <header className="h-14 border-b border-slate-200/60 flex items-center justify-between px-4 bg-white/80 backdrop-blur-md shrink-0 sticky top-0 z-50 shadow-sm">
+    <div className="flex items-center gap-4">
+      <button 
+        onClick={onToggleSidebar}
+        className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-500"
+        title={isSidebarOpen ? "Close Sidebar" : "Open Sidebar"}
+      >
+        <LayoutDashboard size={20} className={isSidebarOpen ? "text-brand" : ""} />
+      </button>
+      <div className="flex items-center gap-3">
+        <div className="bg-brand text-white font-extrabold p-1.5 rounded-lg text-[10px] px-2.5 select-none tracking-tighter shadow-sm shadow-brand/20">AHAGURU</div>
+        <h1 className="font-bold text-base text-slate-800 tracking-tight">MCQ Reasoning Assistant</h1>
+        <span className="bg-slate-100 text-slate-500 text-[9px] px-2 py-0.5 rounded-full uppercase font-bold tracking-widest hidden sm:inline-block border border-slate-200/50">INTERNAL VALIDATION v2.5</span>
+      </div>
     </div>
     <div className="flex items-center gap-4">
       <div className="flex-col items-end hidden md:flex leading-none">
-        <span className="text-[9px] text-slate-400 uppercase font-black">Reviewer</span>
-        <span className="text-[11px] font-bold text-slate-700 italic">Director / Mentor</span>
+        <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest">Reviewer</span>
+        <span className="text-[11px] font-bold text-slate-700 italic opacity-80">Director / Mentor</span>
       </div>
       <button
         id="check-vote-btn"
         onClick={onShowVotes}
-        className="bg-brand hover:bg-brand-dark text-white px-3 py-1.5 rounded text-[11px] font-black shadow-md transition-all uppercase tracking-wider active:scale-95"
+        className="bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-xl text-[11px] font-black shadow-lg shadow-brand/20 transition-all uppercase tracking-wider active:scale-95"
       >
         Check Results
       </button>
@@ -73,17 +82,34 @@ const Sidebar = ({
   activeId,
   onSelect,
   votes,
-  isQuestionVoted
+  isQuestionVoted,
+  showEmpty,
+  onToggleEmpty,
+  emptyQuestions,
+  emptyCount
 }: {
   questions: MCQ[];
   activeId: number;
   onSelect: (id: number) => void;
   votes: Record<number, Record<string, string>>;
   isQuestionVoted: (qid: number) => boolean;
+  showEmpty?: boolean;
+  onToggleEmpty?: () => void;
+  emptyQuestions?: MCQ[];
+  emptyCount?: number;
 }) => (
-  <aside className="w-64 border-r border-slate-200 flex flex-col bg-slate-50 shrink-0 select-none">
+  <motion.aside 
+    initial={{ width: 0, opacity: 0 }}
+    animate={{ width: 256, opacity: 1 }}
+    exit={{ width: 0, opacity: 0 }}
+    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    className="border-r border-slate-200/60 flex flex-col bg-slate-50 shrink-0 select-none overflow-hidden"
+  >
     <div className="p-4 border-b border-slate-200 bg-white">
-      <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Question Index</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Question Index</h2>
+        <span className="text-[10px] font-bold text-brand bg-orange-50 px-2 py-0.5 rounded-full">{questions.length} Total</span>
+      </div>
       <div className="grid grid-cols-5 gap-1.5">
         {questions.map((q, idx) => {
           const isVoted = isQuestionVoted(q.id);
@@ -117,22 +143,78 @@ const Sidebar = ({
       </p>
     </div>
 
-    <div className="flex-1 overflow-y-auto p-4 space-y-2 scroll-hide">
-      <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Questions</h3>
-      {questions.map((q) => (
-        <button
-          key={q.id}
-          onClick={() => onSelect(q.id)}
-          className={`w-full text-left p-3 rounded text-[11px] transition-all border-l-4 truncate
-            ${activeId === q.id
-              ? 'bg-white border border-slate-200 shadow-sm border-l-brand font-bold text-slate-900'
-              : 'bg-transparent border-transparent border-l-transparent text-slate-500 hover:bg-slate-200/50'}`}
-        >
-          {q.question_text.replace(/\\\(|\\\)|[\r\n]/g, '').substring(0, 40)}...
-        </button>
-      ))}
+    <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-hide bg-white/50">
+      <div>
+        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <CheckCircle2 size={12} className="text-green-500" />
+          Ready for Review
+        </h3>
+        <div className="space-y-1">
+          {questions.map((q) => (
+            <button
+              key={q.id}
+              onClick={() => onSelect(q.id)}
+              className={`w-full text-left p-3 rounded-xl text-[11px] transition-all border-l-4 group
+                ${activeId === q.id
+                  ? 'bg-white border border-slate-200 shadow-sm border-l-brand font-bold text-slate-900 translate-x-1'
+                  : 'bg-transparent border-transparent border-l-transparent text-slate-500 hover:bg-slate-200/50 hover:translate-x-0.5'}`}
+            >
+              <div className="flex items-center gap-2">
+                <Hash size={12} className={activeId === q.id ? "text-brand" : "text-slate-300 group-hover:text-slate-400"} />
+                <span className="truncate">{q.question_text.replace(/\\\(|\\\)|[\r\n]/g, '').substring(0, 40)}...</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
-  </aside>
+
+    <div className="p-4 border-t border-slate-200/60 bg-slate-100/30 backdrop-blur-sm">
+      <button 
+        onClick={() => onToggleEmpty?.()}
+        className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all border
+          ${showEmpty ? 'bg-white border-slate-200 shadow-sm' : 'bg-transparent border-transparent hover:bg-slate-200/50'}`}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className={`p-1.5 rounded-lg ${showEmpty ? 'bg-brand/10 text-brand' : 'bg-slate-200 text-slate-400'}`}>
+            <Info size={14} />
+          </div>
+          <div className="text-left">
+            <span className="block text-[10px] font-black uppercase tracking-wider text-slate-600">Other Questions</span>
+            <span className="block text-[9px] font-bold text-slate-400 -mt-0.5">No AI explanations yet</span>
+          </div>
+        </div>
+        <span className="text-[10px] font-black text-slate-400 bg-slate-200/50 px-2 py-0.5 rounded-full">{emptyCount}</span>
+      </button>
+
+      <AnimatePresence>
+        {showEmpty && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden mt-2 space-y-1"
+          >
+            {emptyQuestions?.map((q) => (
+              <button
+                key={q.id}
+                onClick={() => onSelect(q.id)}
+                className={`w-full text-left p-2.5 rounded-xl text-[10px] transition-all group
+                  ${activeId === q.id 
+                    ? 'bg-white font-bold text-slate-900 shadow-sm border border-slate-100' 
+                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full bg-slate-300 group-hover:bg-brand transition-colors" />
+                  <span className="truncate">Q#{q.id} - Review Question Text</span>
+                </div>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  </motion.aside>
 );
 
 const Footer = ({ voteCount, total }: { voteCount: number; total: number }) => (
@@ -165,8 +247,8 @@ const MathContent = ({ content, size = 'base' }: { content: string; size?: 'sm' 
   return (
     <div className={`prose prose-slate max-w-none 
       [&_p]:m-0 [&_p]:leading-relaxed
-      [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm
-      [&_.katex-display]:my-2 [&_.katex-display]:overflow-x-auto [&_.katex-display]:py-2
+      [&_code]:bg-slate-100/80 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:text-sm
+      [&_.katex-display]:my-4 [&_.katex-display]:overflow-x-auto [&_.katex-display]:py-2
       ${sizeClasses[size]}`}>
       <ReactMarkdown
         remarkPlugins={[remarkMath]}
@@ -450,18 +532,36 @@ const SplashScreen = ({ onDone }: { onDone: () => void }) => {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   // votes: { [questionId]: { [option]: modelName } }
   const [votes, setVotes] = useState<Record<number, Record<string, string>>>(() => {
     const saved = localStorage.getItem('ag-mcq-votes-v2');
     return saved ? JSON.parse(saved) : {};
   });
-  const [activeId, setActiveId] = useState<number>(mcqData[0].id);
+
+  // Sort and filter MCQs
+  const sortedMcqs = useMemo(() => {
+    return [...(mcqData as MCQ[])].sort((a, b) => {
+      const aCount = Object.keys(a.explanations || {}).length;
+      const bCount = Object.keys(b.explanations || {}).length;
+      if (aCount !== bCount) return bCount - aCount;
+      return a.id - b.id; // Secondary sort by ID
+    });
+  }, []);
+
+  const [activeId, setActiveId] = useState<number>(sortedMcqs[0]?.id || 0);
   const [activeOption, setActiveOption] = useState<string>('');
   const [showSummary, setShowSummary] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ src: string; isBase64: boolean; index: number; total: number } | null>(null);
 
-  const activeMcq = (mcqData as MCQ[]).find(q => q.id === activeId) || mcqData[0];
+  const [showEmpty, setShowEmpty] = useState(false);
+
+  const questionsWithExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length > 0);
+  const questionsWithoutExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length === 0);
+
+  const activeMcq = sortedMcqs.find(q => q.id === activeId) || sortedMcqs[0];
   const models = Object.keys(activeMcq.explanations);
+  const [viewDensity, setViewDensity] = useState<'comfortable' | 'compact'>('comfortable');
 
   useEffect(() => {
     setActiveOption(activeMcq.correct_answer);
@@ -506,20 +606,36 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
-      <Header onShowVotes={() => setShowSummary(true)} />
+    <div className="h-screen flex flex-col bg-[#f8fafc] overflow-hidden font-sans selection:bg-brand/10">
+      {/* Decorative background elements */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0" 
+        style={{ backgroundImage: `radial-gradient(#f97316 1px, transparent 1px)`, backgroundSize: '24px 24px' }}></div>
+      
+      <Header 
+        onShowVotes={() => setShowSummary(true)} 
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        isSidebarOpen={isSidebarOpen}
+      />
 
-      <main className="flex flex-1 overflow-hidden">
-        <Sidebar
-          questions={mcqData as MCQ[]}
-          activeId={activeId}
-          onSelect={(id) => {
-            setActiveId(id);
-            setActiveOption('A');
-          }}
-          votes={votes}
-          isQuestionVoted={isQuestionVoted}
-        />
+      <main className="flex flex-1 overflow-hidden relative z-10">
+        <AnimatePresence initial={false}>
+          {isSidebarOpen && (
+            <Sidebar
+              questions={questionsWithExplanations}
+              emptyQuestions={questionsWithoutExplanations}
+              emptyCount={questionsWithoutExplanations.length}
+              showEmpty={showEmpty}
+              onToggleEmpty={() => setShowEmpty(!showEmpty)}
+              activeId={activeId}
+              onSelect={(id) => {
+                setActiveId(id);
+                setActiveOption('A');
+              }}
+              votes={votes}
+              isQuestionVoted={isQuestionVoted}
+            />
+          )}
+        </AnimatePresence>
 
         <section className="flex-1 flex flex-col bg-white overflow-hidden">
           {/* Question Section - Compact */}
@@ -565,7 +681,7 @@ export default function App() {
             </div>
 
             {/* Question Text */}
-            <div className="bg-white p-3 rounded border border-blue-300 shadow-sm">
+            <div className="bg-white/40 backdrop-blur-sm p-4 rounded-[1.5rem] border border-blue-200/50 shadow-sm">
               <div className="text-base font-semibold text-slate-900 leading-relaxed">
                 <MathContent content={activeMcq.question_text} size="base" />
               </div>
@@ -584,9 +700,9 @@ export default function App() {
                   <button
                     key={opt}
                     onClick={() => setActiveOption(opt)}
-                    className={`relative min-w-[50px] h-9 rounded-full font-black text-sm transition-all flex items-center justify-center gap-1.5 border-2
+                    className={`relative min-w-[60px] h-10 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-1.5 border-2
                       ${isActive
-                        ? 'bg-brand border-brand text-white shadow-lg scale-105'
+                        ? 'bg-brand border-brand text-white shadow-lg shadow-brand/20 scale-105 z-10'
                         : isCorrect
                           ? 'bg-green-50 border-green-400 text-green-700 hover:bg-green-100'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}
@@ -617,17 +733,37 @@ export default function App() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-3">
-                {models.map((m, i) => (
-                  <span key={m} className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-                    <div className={`w-2 h-2 rounded-full ${getModelColor(i)}`}></div>
-                    {m.split('_').pop()?.toUpperCase()}
-                  </span>
-                ))}
+              <div className="flex items-center gap-4">
+                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button 
+                    onClick={() => setViewDensity('comfortable')}
+                    className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all
+                      ${viewDensity === 'comfortable' ? 'bg-white text-brand shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    Comfortable
+                  </button>
+                  <button 
+                    onClick={() => setViewDensity('compact')}
+                    className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all
+                      ${viewDensity === 'compact' ? 'bg-white text-brand shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    Compact
+                  </button>
+                </div>
+                <div className="flex gap-3">
+                  {models.map((m, i) => (
+                    <span key={m} className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
+                      <div className={`w-2 h-2 rounded-full ${getModelColor(i)}`}></div>
+                      {m.split('_').pop()?.toUpperCase()}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className={`flex-1 overflow-x-auto overflow-y-hidden p-8 flex gap-8 scroll-smooth pb-12
+              ${models.length <= 3 ? 'justify-center' : 'justify-start'}
+              scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent`}>
               {models.map((model, idx) => {
                 const exp = activeMcq.explanations[model]?.[activeOption];
                 const isSelectedForOption = votes[activeId]?.[activeOption] === model;
@@ -635,58 +771,72 @@ export default function App() {
                 return (
                   <motion.div
                     key={model}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className={`flex flex-col rounded-2xl overflow-hidden border-2 transition-all duration-300
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className={`flex flex-col rounded-[2rem] overflow-hidden border-2 transition-all duration-300 shrink-0
+                      ${models.length > 3 ? 'w-[400px]' : 'flex-1 max-w-[500px]'}
                       ${isSelectedForOption
-                        ? 'border-brand ring-4 ring-brand/10 shadow-xl bg-white'
-                        : 'border-slate-100 bg-white/70 hover:border-slate-300 hover:bg-white hover:shadow-lg'}`}
+                        ? 'border-brand ring-8 ring-brand/5 shadow-2xl bg-white scale-[1.02] z-10'
+                        : 'border-white bg-white/80 hover:border-brand/20 hover:bg-white hover:shadow-xl'}`}
                   >
-                    {/* Compact model header strip */}
-                    <div className={`px-4 py-2 flex items-center justify-between ${getModelColor(idx)}`}>
-                      <span className="text-white font-black text-xs uppercase tracking-widest">{model.split('_').pop()}</span>
+                    <div className={`px-4 py-2.5 flex items-center justify-between sticky top-0 z-20 ${getModelColor(idx)} border-b border-white/10`}>
+                      <span className="text-white font-black text-xs uppercase tracking-[0.15em]">{model.split('_').pop()}</span>
                       {isSelectedForOption && (
-                        <span className="flex items-center gap-1 bg-white/20 rounded px-2 py-0.5 text-white text-[10px] font-bold">
-                          <CheckCircle2 className="w-3 h-3" /> Best for {activeOption}
-                        </span>
+                        <motion.span 
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="flex items-center gap-1 bg-white/30 backdrop-blur-md rounded-lg px-2.5 py-1 text-white text-[10px] font-black shadow-sm"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" /> WINNER
+                        </motion.span>
                       )}
                     </div>
 
-                    {/* Content - main focus */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div className={`flex-1 overflow-y-auto ${viewDensity === 'compact' ? 'p-3 space-y-3' : 'p-5 space-y-5'} scrollbar-thin`}>
                       {exp ? (
-                        <>
-                          <div className="space-y-1.5">
-                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider">💡 Correct Understanding</span>
-                            <div className="bg-blue-50 p-3.5 rounded-xl border border-blue-100">
-                              <MathContent content={exp.explanation} size="base" />
+                        <div className="space-y-4">
+                             <div className="space-y-2">
+                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-blue-50/10 backdrop-blur-sm py-1 z-10">
+                              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                              Explanation
+                            </span>
+                            <div className="bg-blue-50/40 p-5 rounded-3xl border border-blue-100/50 shadow-inner">
+                              <MathContent content={exp.explanation} size="lg" />
                             </div>
                           </div>
 
-                          <div className="space-y-1.5">
-                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider">🎓 Why Your Answer Seems Right</span>
-                            <div className="bg-amber-50 p-3.5 rounded-xl border border-amber-100">
-                              <MathContent content={exp.why_right} size="base" />
+                          <div className="space-y-2.5">
+                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-amber-50/10 backdrop-blur-sm py-1 z-10">
+                              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                              Why It Works
+                            </span>
+                            <div className="bg-amber-50/40 p-5 rounded-3xl border border-amber-100/50 shadow-inner">
+                              <MathContent content={exp.why_right} size="lg" />
                             </div>
                           </div>
 
-                          <div className="space-y-1.5">
-                            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-wider">🧠 Key Concept</span>
-                            <div className="bg-indigo-50 p-3.5 rounded-xl border border-indigo-100">
-                              <MathContent content={exp.core_concept} size="base" />
+                          <div className="space-y-2.5">
+                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-indigo-50/10 backdrop-blur-sm py-1 z-10">
+                              <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                              Key Concept
+                            </span>
+                            <div className="bg-indigo-50/40 p-5 rounded-3xl border border-indigo-100/50 shadow-inner">
+                              <MathContent content={exp.core_concept} size="lg" />
                             </div>
                           </div>
 
                           {exp.next_step && (
-                            <div className="space-y-1.5">
-                              <span className="text-[10px] font-black text-green-600 uppercase tracking-wider">🚀What to do next</span>
-                              <div className="bg-green-50 p-3.5 rounded-xl border border-green-100">
-                                <MathContent content={exp.next_step} size="base" />
+                            <div className="space-y-2.5">
+                              <span className="text-[10px] font-black text-green-700 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-green-50/10 backdrop-blur-sm py-1 z-10">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                                Next Step
+                              </span>
+                              <div className="bg-green-50/40 p-5 rounded-3xl border border-green-100/50 shadow-inner">
+                                <MathContent content={exp.next_step} size="lg" />
                               </div>
                             </div>
-                          )}
-                        </>
+                          )} </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center text-slate-300">
                           <HelpCircle size={28} strokeWidth={1} className="mb-2" />
