@@ -143,22 +143,30 @@ const Footer = ({ voteCount, total }: { voteCount: number; total: number }) => (
 
 const MathContent = ({ content, size = 'base' }: { content: string; size?: 'sm' | 'base' | 'lg' }) => {
   const sizeClasses = {
-    sm: '[&_.katex]:text-sm [&_.katex-display]:text-sm',
-    base: '[&_.katex]:text-base [&_.katex-display]:text-base',
-    lg: '[&_.katex]:text-lg [&_.katex-display]:text-lg'
+    sm: 'text-[11px] [&_.katex]:text-[11px] [&_.katex-display]:text-[11px]',
+    base: 'text-sm sm:text-base [&_.katex]:text-sm sm:[&_.katex]:text-base',
+    lg: 'text-lg [&_.katex]:text-lg [&_.katex-display]:text-lg'
   };
+
+  // Pre-process content to convert \( \) and \[ \] to $ and $$
+  // Also handle some common LaTeX patterns that might be missing $ delimiters
+  const processedContent = content
+    .replace(/\\\(/g, '$')
+    .replace(/\\\)/g, '$')
+    .replace(/\\\[/g, '$$$')
+    .replace(/\\\]/g, '$$$');
   
   return (
-    <div className={`prose prose-sm max-w-none prose-slate 
-      [&_p]:m-0 [&_p]:leading-relaxed [&_p]:text-inherit
+    <div className={`prose prose-slate max-w-none 
+      [&_p]:m-0 [&_p]:leading-relaxed
       [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm
-      [&_.katex-display]:my-1 [&_.katex-display]:overflow-x-auto [&_.katex-display]:bg-slate-50 [&_.katex-display]:px-2 [&_.katex-display]:py-2 [&_.katex-display]:rounded
+      [&_.katex-display]:my-2 [&_.katex-display]:overflow-x-auto [&_.katex-display]:py-2
       ${sizeClasses[size]}`}>
       <ReactMarkdown
         remarkPlugins={[remarkMath]}
         rehypePlugins={[rehypeKatex]}
       >
-        {content}
+        {processedContent}
       </ReactMarkdown>
     </div>
   );
@@ -440,9 +448,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* Options Section - Compact */}
-          <div className="px-6 py-3 border-b border-slate-200 bg-slate-50/50 shrink-0">
-            <div className="flex items-center gap-3">
+          {/* Options Selection - Much more compact */}
+          <div className="px-6 py-2 border-b border-slate-200 bg-white shrink-0 shadow-sm z-10">
+            <div className="flex items-center gap-2 overflow-x-auto py-1 scroll-hide">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Options:</span>
               {options.map(opt => {
                 const isCorrect = activeMcq.correct_answer === opt;
                 const isActive = activeOption === opt;
@@ -451,105 +460,132 @@ export default function App() {
                   <button
                     key={opt}
                     onClick={() => setActiveOption(opt)}
-                    className={`flex-1 py-2.5 px-3 border-2 rounded-lg font-bold text-center transition-all
+                    className={`relative min-w-[50px] h-9 rounded-full font-black text-sm transition-all flex items-center justify-center gap-1.5 border-2
                       ${isActive 
-                        ? 'border-brand bg-orange-100 shadow-md' 
+                        ? 'bg-brand border-brand text-white shadow-lg scale-105' 
                         : isCorrect
-                          ? 'border-green-400 bg-green-100 hover:shadow'
-                          : 'border-slate-300 bg-white hover:bg-slate-50'}`}
+                          ? 'bg-green-50 border-green-400 text-green-700 hover:bg-green-100'
+                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}
                   >
-                    <div className={`text-xl font-black ${isActive ? 'text-brand' : isCorrect ? 'text-green-700' : 'text-slate-700'}`}>
-                      {opt}
-                    </div>
-                    <div className="text-[8px] font-bold text-slate-500 mt-0.5">
-                      {isCorrect ? '✓' : ''}
-                    </div>
+                    {opt}
+                    {isCorrect && !isActive && <div className="w-1.5 h-1.5 rounded-full bg-green-500" />}
+                    {isActive && isCorrect && <CheckCircle className="w-3 h-3 text-white" />}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Comparison Cards Section - Takes all remaining space */}
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="px-6 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between sticky top-0">
-              <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-brand" />
-                AI Model Comparison - Option {activeOption}
-              </h4>
-              <div className="flex gap-2">
+          {/* Comparison Cards Section - Enhanced for more space and premium feel */}
+          <div className="flex-1 overflow-hidden flex flex-col bg-slate-50/30">
+            <div className="px-6 py-3 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-brand" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-slate-800 tracking-tight">
+                    Model Reasoning Analysis
+                  </h4>
+                  <p className="text-[10px] text-slate-400 font-medium -mt-0.5">Evaluating Option <span className="font-bold text-brand">{activeOption}</span></p>
+                </div>
+              </div>
+              <div className="flex gap-4">
                 {models.map((m, i) => (
-                  <span key={m} className="flex items-center gap-1 text-[9px] font-bold text-slate-600">
-                    <div className={`w-2.5 h-2.5 rounded-full ${getModelColor(i)}`}></div>
+                  <span key={m} className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600">
+                    <div className={`w-2 h-2 rounded-full ${getModelColor(i)}`}></div>
                     {m.split('_').pop()?.toUpperCase()}
                   </span>
                 ))}
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
               {models.map((model, idx) => {
                 const exp = activeMcq.explanations[model]?.[activeOption];
                 const isSelected = votes[activeId] === model;
                 
                 return (
-                  <div 
-                    key={model} 
-                    className={`flex flex-col rounded-xl overflow-hidden border-2 transition-all shadow-sm
-                      ${isSelected ? 'border-brand shadow-md bg-orange-50/50' : 'border-slate-200 bg-white'}`}
+                  <motion.div 
+                    key={model}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className={`flex flex-col rounded-2xl overflow-hidden border-2 transition-all duration-300 group
+                      ${isSelected 
+                        ? 'border-brand ring-4 ring-brand/5 shadow-xl bg-white' 
+                        : 'border-slate-100 bg-white/60 hover:border-slate-300 hover:bg-white hover:shadow-lg'}`}
                   >
-                    <div className={`px-4 py-2.5 text-white flex justify-between items-center text-sm font-bold ${getModelColor(idx)}`}>
-                      <span className="tracking-widest uppercase">{model.split('_').pop()}</span>
-                      {isSelected && <span className="text-xs">✓</span>}
+                    <div className={`px-5 py-4 text-white flex justify-between items-center ${getModelColor(idx)}`}>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] opacity-70 font-bold uppercase tracking-widest">AI Model</span>
+                        <span className="text-sm font-black tracking-wide uppercase">{model.split('_').pop()}</span>
+                      </div>
+                      {isSelected && (
+                        <div className="bg-white/20 backdrop-blur-sm p-1.5 rounded-lg">
+                          <CheckCircle2 className="w-5 h-5 text-white" />
+                        </div>
+                      )}
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto p-4 space-y-2.5 text-[11px] leading-relaxed">
+                    <div className="flex-1 overflow-y-auto p-5 space-y-5">
                       {exp ? (
                         <>
-                          <div className="bg-blue-50 p-2.5 rounded border border-blue-200">
-                            <div className="text-[8px] font-bold text-blue-700 uppercase tracking-tight mb-1.5">Explanation</div>
-                            <div className="text-slate-700 text-[10px] leading-snug">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1 h-3 rounded-full bg-blue-500" />
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">The Explanation</span>
+                            </div>
+                            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
                               <MathContent content={exp.explanation} size="sm" />
                             </div>
                           </div>
 
-                          <div className="bg-amber-50 p-2.5 rounded border border-amber-200">
-                            <div className="text-[8px] font-bold text-amber-700 uppercase tracking-tight mb-1">Why Correct</div>
-                            <div className="text-slate-700 text-[10px] leading-snug">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1 h-3 rounded-full bg-amber-500" />
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Pedagogical Rationale</span>
+                            </div>
+                            <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/50">
                               <MathContent content={exp.why_right} size="sm" />
                             </div>
                           </div>
 
-                          <div className="bg-indigo-50 p-2.5 rounded border border-indigo-200">
-                            <div className="text-[8px] font-bold text-indigo-700 uppercase tracking-tight mb-1">Concept</div>
-                            <div className="text-slate-700 text-[10px] leading-snug">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1 h-3 rounded-full bg-indigo-500" />
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Core Concept</span>
+                            </div>
+                            <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50">
                               <MathContent content={exp.core_concept} size="sm" />
                             </div>
                           </div>
                         </>
                       ) : (
-                        <div className="flex flex-col items-center justify-center h-32 text-center text-slate-400">
-                          <HelpCircle size={28} strokeWidth={1} />
-                          <span className="text-xs font-bold mt-2">No data</span>
+                        <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center text-slate-300">
+                          <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
+                            <HelpCircle size={32} strokeWidth={1} />
+                          </div>
+                          <span className="text-xs font-bold uppercase tracking-widest">No data available</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="p-2.5 bg-slate-50 border-t border-slate-200">
+                    <div className="p-4 bg-slate-50/80 border-t border-slate-100 mt-auto">
                       <button 
                         onClick={() => handleVote(model)}
                         disabled={!exp}
-                        className={`w-full py-2 rounded text-[10px] font-bold transition-all
+                        className={`w-full py-3 rounded-xl text-xs font-black transition-all duration-300
                           ${isSelected 
-                            ? 'bg-brand text-white shadow-md' 
+                            ? 'bg-brand text-white shadow-lg shadow-brand/20' 
                             : !exp 
                               ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                              : 'bg-white border border-slate-300 text-slate-700 hover:border-brand hover:bg-orange-50'}`}
+                              : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-brand hover:text-brand hover:bg-orange-50'}`}
                       >
-                        {isSelected ? '✓ Selected' : !exp ? 'No Data' : 'Vote'}
+                        {isSelected ? 'SELECTED AS BEST' : 'VOTE FOR THIS'}
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
