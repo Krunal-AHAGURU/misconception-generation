@@ -3,13 +3,13 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { 
-  CheckCircle2, 
-  ChevronRight, 
-  Vote, 
-  BarChart3, 
-  Info, 
-  Moon, 
+import {
+  CheckCircle2,
+  ChevronRight,
+  Vote,
+  BarChart3,
+  Info,
+  Moon,
   Sun,
   LayoutDashboard,
   CheckCircle,
@@ -57,7 +57,7 @@ const Header = ({ onShowVotes }: { onShowVotes: () => void }) => (
         <span className="text-[9px] text-slate-400 uppercase font-black">Reviewer</span>
         <span className="text-[11px] font-bold text-slate-700 italic">Director / Mentor</span>
       </div>
-      <button 
+      <button
         id="check-vote-btn"
         onClick={onShowVotes}
         className="bg-brand hover:bg-brand-dark text-white px-3 py-1.5 rounded text-[11px] font-black shadow-md transition-all uppercase tracking-wider active:scale-95"
@@ -68,42 +68,48 @@ const Header = ({ onShowVotes }: { onShowVotes: () => void }) => (
   </header>
 );
 
-const Sidebar = ({ 
-  questions, 
-  activeId, 
-  onSelect, 
-  votes 
-}: { 
-  questions: MCQ[]; 
-  activeId: number; 
+const Sidebar = ({
+  questions,
+  activeId,
+  onSelect,
+  votes,
+  isQuestionVoted
+}: {
+  questions: MCQ[];
+  activeId: number;
   onSelect: (id: number) => void;
-  votes: Record<number, string>;
+  votes: Record<number, Record<string, string>>;
+  isQuestionVoted: (qid: number) => boolean;
 }) => (
   <aside className="w-64 border-r border-slate-200 flex flex-col bg-slate-50 shrink-0 select-none">
     <div className="p-4 border-b border-slate-200 bg-white">
       <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Question Index</h2>
       <div className="grid grid-cols-5 gap-1.5">
         {questions.map((q, idx) => {
-          const isVoted = !!votes[q.id];
+          const isVoted = isQuestionVoted(q.id);
+          const votedCount = votes[q.id] ? Object.keys(votes[q.id]).length : 0;
           const isActive = activeId === q.id;
           return (
             <button
               key={q.id}
               onClick={() => onSelect(q.id)}
-              className={`h-8 flex items-center justify-center rounded border transition-all text-xs font-bold
-                ${isActive 
-                  ? 'border-brand bg-orange-50 text-brand' 
-                  : isVoted 
-                    ? 'border-green-200 bg-green-50 text-green-700' 
+              className={`relative h-8 flex items-center justify-center rounded border transition-all text-xs font-bold
+                ${isActive
+                  ? 'border-brand bg-orange-50 text-brand'
+                  : isVoted
+                    ? 'border-green-200 bg-green-50 text-green-700'
                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'}`}
             >
               {(idx + 1).toString().padStart(2, '0')}
+              {isVoted && !isActive && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white text-[6px] flex items-center justify-center text-white font-black">{votedCount}</span>
+              )}
             </button>
           );
         })}
       </div>
     </div>
-    
+
     <div className="p-4 bg-orange-50 border-b border-orange-100">
       <p className="text-[11px] leading-relaxed text-orange-800">
         <strong>Reviewer Instructions:</strong><br />
@@ -118,8 +124,8 @@ const Sidebar = ({
           key={q.id}
           onClick={() => onSelect(q.id)}
           className={`w-full text-left p-3 rounded text-[11px] transition-all border-l-4 truncate
-            ${activeId === q.id 
-              ? 'bg-white border border-slate-200 shadow-sm border-l-brand font-bold text-slate-900' 
+            ${activeId === q.id
+              ? 'bg-white border border-slate-200 shadow-sm border-l-brand font-bold text-slate-900'
               : 'bg-transparent border-transparent border-l-transparent text-slate-500 hover:bg-slate-200/50'}`}
         >
           {q.question_text.replace(/\\\(|\\\)|[\r\n]/g, '').substring(0, 40)}...
@@ -155,7 +161,7 @@ const MathContent = ({ content, size = 'base' }: { content: string; size?: 'sm' 
     .replace(/\\\)/g, '$')
     .replace(/\\\[/g, '$$$')
     .replace(/\\\]/g, '$$$');
-  
+
   return (
     <div className={`prose prose-slate max-w-none 
       [&_p]:m-0 [&_p]:leading-relaxed
@@ -172,16 +178,16 @@ const MathContent = ({ content, size = 'base' }: { content: string; size?: 'sm' 
   );
 };
 
-const ImageModal = ({ 
-  image, 
+const ImageModal = ({
+  image,
   onClose,
   isBase64,
   count = 1,
   currentIndex = 0,
   onNext,
   onPrev
-}: { 
-  image: string; 
+}: {
+  image: string;
   onClose: () => void;
   isBase64: boolean;
   count?: number;
@@ -190,14 +196,14 @@ const ImageModal = ({
   onPrev?: () => void;
 }) => (
   <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
       className="absolute inset-0 bg-gray-900/70 backdrop-blur-sm"
     />
-    <motion.div 
+    <motion.div
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.8, opacity: 0 }}
@@ -205,7 +211,7 @@ const ImageModal = ({
     >
       <div className="p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
         <span className="text-sm font-bold text-slate-700">Solution Reference {count > 1 ? `(${currentIndex + 1}/${count})` : ''} {isBase64 ? '📎 Embedded' : '🔗 URL'}</span>
-        <button 
+        <button
           onClick={onClose}
           className="text-gray-400 hover:text-gray-600 transition-colors text-2xl leading-none"
         >
@@ -213,9 +219,9 @@ const ImageModal = ({
         </button>
       </div>
       <div className="flex-1 overflow-auto p-6 flex items-center justify-center">
-        <img 
-          src={image} 
-          alt="Solution Reference" 
+        <img
+          src={image}
+          alt="Solution Reference"
           className="w-full h-auto block object-contain max-h-[calc(90vh-120px)]"
           referrerPolicy="no-referrer"
         />
@@ -241,30 +247,35 @@ const ImageModal = ({
   </div>
 );
 
-const VoteSummary = ({ 
-  votes, 
-  onClose, 
-  questions 
-}: { 
-  votes: Record<number, string>; 
+const VoteSummary = ({
+  votes,
+  onClose,
+  questions
+}: {
+  votes: Record<number, Record<string, string>>;
   onClose: () => void;
   questions: MCQ[];
 }) => {
-  const voteCounts: Record<string, number> = {};
-  Object.values(votes).forEach(v => {
-    voteCounts[v] = (voteCounts[v] || 0) + 1;
+  // Count how many times each model won across all questions & options
+  const modelWins: Record<string, number> = {};
+  Object.values(votes).forEach(optMap => {
+    Object.values(optMap).forEach(modelName => {
+      modelWins[modelName] = (modelWins[modelName] || 0) + 1;
+    });
   });
+  const totalVotes = Object.values(modelWins).reduce((a, b) => a + b, 0);
+  const votedQuestions = questions.filter(q => votes[q.id] && Object.keys(votes[q.id]).length > 0);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
         className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
       />
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -280,41 +291,52 @@ const VoteSummary = ({
           </div>
         </div>
 
-        <div className="p-8 overflow-y-auto">
-          {Object.keys(votes).length === 0 ? (
+        <div className="p-6 overflow-y-auto space-y-6">
+          {totalVotes === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
                 <Info size={32} />
               </div>
               <p className="text-gray-500 font-bold">No votes recorded yet</p>
-              <p className="text-sm text-gray-400">Vote on questions to see analytics here.</p>
+              <p className="text-sm text-gray-400">Vote on options to see results here.</p>
             </div>
           ) : (
-            <div className="space-y-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {Object.entries(voteCounts).map(([model, count]) => (
-                  <div key={model} className="p-6 rounded-3xl bg-orange-50 border border-orange-100">
-                    <div className="text-[10px] font-black text-brand/60 uppercase tracking-widest mb-1">{model.split('_').pop()}</div>
-                    <div className="text-3xl font-black text-slate-900">{count} <span className="text-sm font-medium text-slate-500">Votes</span></div>
-                  </div>
-                ))}
+            <div className="space-y-6">
+              {/* Model score cards */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Overall Wins</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {Object.entries(modelWins).sort(([,a],[,b]) => b - a).map(([model, count]) => (
+                    <div key={model} className="p-4 rounded-2xl bg-orange-50 border border-orange-100">
+                      <div className="text-[10px] font-black text-brand/60 uppercase tracking-widest mb-1">{model.split('_').pop()}</div>
+                      <div className="text-2xl font-black text-slate-900">{count} <span className="text-xs font-medium text-slate-500">/ {totalVotes}</span></div>
+                      <div className="mt-1.5 h-1.5 bg-orange-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-brand rounded-full" style={{ width: `${Math.round(count/totalVotes*100)}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
+              {/* Per-question breakdown */}
               <div>
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Detailed Selections</h3>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Question Breakdown</h3>
                 <div className="space-y-2">
-                  {questions.map(q => (
-                    votes[q.id] && (
-                      <div key={q.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                        <span className="text-sm font-bold text-gray-700">Q#{q.id}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-gray-500">Won by</span>
-                          <span className="px-3 py-1 bg-white border border-gray-200 rounded-lg text-xs font-bold shadow-sm">
-                             {votes[q.id].split('_').pop()}
-                          </span>
-                        </div>
+                  {votedQuestions.map(q => (
+                    <div key={q.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-black text-gray-700">Q#{q.id}</span>
+                        <span className="text-[10px] text-gray-400">{Object.keys(votes[q.id]).length} option(s) reviewed</span>
                       </div>
-                    )
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(votes[q.id]).map(([opt, model]) => (
+                          <div key={opt} className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-200 rounded-lg">
+                            <span className="text-[10px] font-black text-brand">Opt {opt}:</span>
+                            <span className="text-[10px] font-bold text-gray-700">{model.split('_').pop()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -322,12 +344,13 @@ const VoteSummary = ({
           )}
         </div>
 
-        <div className="p-8 mt-auto flex justify-end">
-          <button 
+        <div className="px-6 pb-6 flex justify-between items-center border-t border-gray-100 pt-4">
+          <span className="text-xs text-gray-400 font-medium">{totalVotes} vote{totalVotes !== 1 ? 's' : ''} recorded</span>
+          <button
             onClick={onClose}
-            className="px-8 py-3 bg-brand text-white font-bold rounded-2xl hover:opacity-90 transition-all shadow-lg shadow-orange-100"
+            className="px-6 py-2.5 bg-brand text-white font-bold rounded-xl hover:opacity-90 transition-all shadow-lg shadow-orange-100"
           >
-            Back to Dashboard
+            Back to Review
           </button>
         </div>
       </motion.div>
@@ -335,9 +358,72 @@ const VoteSummary = ({
   );
 };
 
+// --- Splash Screen ---
+const SplashScreen = ({ onDone }: { onDone: () => void }) => {
+  useEffect(() => {
+    const timer = setTimeout(onDone, 2800);
+    return () => clearTimeout(timer);
+  }, [onDone]);
+
+  return (
+    <motion.div
+      key="splash"
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 1.05 }}
+      transition={{ duration: 0.6, ease: 'easeInOut' }}
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white"
+      style={{ background: 'linear-gradient(135deg, #fff7f0 0%, #fff 60%, #f0f4ff 100%)' }}
+    >
+      {/* Brand pill */}
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.8 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55, ease: 'backOut' }}
+        className="mb-5"
+      >
+        <span
+          className="inline-block font-black tracking-tighter px-6 py-3 rounded-2xl text-white shadow-2xl text-4xl sm:text-5xl"
+          style={{ background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)', letterSpacing: '-0.04em' }}
+        >
+          AhaGuru
+        </span>
+      </motion.div>
+
+      {/* Subtitle */}
+      <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45, duration: 0.55, ease: 'easeOut' }}
+        className="text-slate-600 font-semibold text-lg sm:text-xl tracking-wide"
+      >
+        MCQ Reasoning Assistant
+      </motion.p>
+
+      {/* Pulsing dot loader */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.0, duration: 0.4 }}
+        className="mt-12 flex gap-2"
+      >
+        {[0, 1, 2].map(i => (
+          <motion.div
+            key={i}
+            className="w-2 h-2 rounded-full bg-orange-400"
+            animate={{ y: [0, -8, 0], opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.18, ease: 'easeInOut' }}
+          />
+        ))}
+      </motion.div>
+    </motion.div>
+  );
+};
+
 export default function App() {
-  const [votes, setVotes] = useState<Record<number, string>>(() => {
-    const saved = localStorage.getItem('ag-mcq-votes');
+  const [showSplash, setShowSplash] = useState(true);
+  // votes: { [questionId]: { [option]: modelName } }
+  const [votes, setVotes] = useState<Record<number, Record<string, string>>>(() => {
+    const saved = localStorage.getItem('ag-mcq-votes-v2');
     return saved ? JSON.parse(saved) : {};
   });
   const [activeId, setActiveId] = useState<number>(mcqData[0].id);
@@ -347,54 +433,63 @@ export default function App() {
 
   const activeMcq = (mcqData as MCQ[]).find(q => q.id === activeId) || mcqData[0];
   const models = Object.keys(activeMcq.explanations);
-  
-  // Pre-select correct answer when question changes
+
   useEffect(() => {
     setActiveOption(activeMcq.correct_answer);
   }, [activeId, activeMcq.correct_answer]);
-  
-  // Dynamically determine options based on the question's explanation keys
+
   const getOptions = () => {
     const optionSet = new Set<string>();
     models.forEach(model => {
       Object.keys(activeMcq.explanations[model] || {}).forEach(opt => optionSet.add(opt));
     });
-    
-    if (optionSet.size > 0) {
-      return Array.from(optionSet).sort();
-    }
-    
+    if (optionSet.size > 0) return Array.from(optionSet).sort();
     return ['A', 'B', 'C', 'D'].slice(0, activeMcq.no_of_options || 4);
   };
 
   const options = getOptions();
 
   useEffect(() => {
-    localStorage.setItem('ag-mcq-votes', JSON.stringify(votes));
+    localStorage.setItem('ag-mcq-votes-v2', JSON.stringify(votes));
   }, [votes]);
 
-  const handleVote = (model: string) => {
-    setVotes(prev => ({ ...prev, [activeId]: model }));
+  // Vote for a model for the currently viewed option
+  const handleVote = (model: string, option: string) => {
+    setVotes(prev => ({
+      ...prev,
+      [activeId]: { ...(prev[activeId] || {}), [option]: model }
+    }));
   };
+
+  // A question is "voted" if at least one option has been voted
+  const isQuestionVoted = (qid: number) => votes[qid] && Object.keys(votes[qid]).length > 0;
+
+  // Total vote entries across all questions & options
+  const totalVoteEntries = Object.values(votes).reduce((sum, optMap) => sum + Object.keys(optMap).length, 0);
 
   const getModelColor = (index: number) => {
     const colors = ['bg-slate-800', 'bg-blue-600', 'bg-purple-700'];
     return colors[index % colors.length];
   };
+  const getModelAccent = (index: number) => {
+    const accents = ['border-slate-700 bg-slate-50', 'border-blue-500 bg-blue-50', 'border-purple-600 bg-purple-50'];
+    return accents[index % accents.length];
+  };
 
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
       <Header onShowVotes={() => setShowSummary(true)} />
-      
+
       <main className="flex flex-1 overflow-hidden">
-        <Sidebar 
-          questions={mcqData as MCQ[]} 
-          activeId={activeId} 
+        <Sidebar
+          questions={mcqData as MCQ[]}
+          activeId={activeId}
           onSelect={(id) => {
             setActiveId(id);
             setActiveOption('A');
           }}
           votes={votes}
+          isQuestionVoted={isQuestionVoted}
         />
 
         <section className="flex-1 flex flex-col bg-white overflow-hidden">
@@ -410,8 +505,8 @@ export default function App() {
               <div className="flex items-center gap-2">
                 {(activeMcq.solution_images_base64?.length || 0) > 0 && (
                   <button
-                    onClick={() => setSelectedImage({ 
-                      src: activeMcq.solution_images_base64![0], 
+                    onClick={() => setSelectedImage({
+                      src: activeMcq.solution_images_base64![0],
                       isBase64: true,
                       index: 0,
                       total: activeMcq.solution_images_base64!.length
@@ -423,8 +518,8 @@ export default function App() {
                 )}
                 {(activeMcq.solution_image_urls?.length || 0) > 0 && (
                   <button
-                    onClick={() => setSelectedImage({ 
-                      src: activeMcq.solution_image_urls![0], 
+                    onClick={() => setSelectedImage({
+                      src: activeMcq.solution_image_urls![0],
                       isBase64: false,
                       index: 0,
                       total: activeMcq.solution_image_urls!.length
@@ -434,12 +529,12 @@ export default function App() {
                     Reference
                   </button>
                 )}
-                <span className={`text-xs font-bold px-2 py-1 rounded ${votes[activeId] ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                  {votes[activeId] ? '✓' : '○'}
+                <span className={`text-xs font-bold px-2 py-1 rounded ${isQuestionVoted(activeId) ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  {isQuestionVoted(activeId) ? `✓ ${Object.keys(votes[activeId] || {}).length} voted` : '○ Not voted'}
                 </span>
               </div>
             </div>
-            
+
             {/* Question Text */}
             <div className="bg-white p-3 rounded border border-blue-300 shadow-sm">
               <div className="text-base font-semibold text-slate-900 leading-relaxed">
@@ -455,14 +550,14 @@ export default function App() {
               {options.map(opt => {
                 const isCorrect = activeMcq.correct_answer === opt;
                 const isActive = activeOption === opt;
-                
+
                 return (
                   <button
                     key={opt}
                     onClick={() => setActiveOption(opt)}
                     className={`relative min-w-[50px] h-9 rounded-full font-black text-sm transition-all flex items-center justify-center gap-1.5 border-2
-                      ${isActive 
-                        ? 'bg-brand border-brand text-white shadow-lg scale-105' 
+                      ${isActive
+                        ? 'bg-brand border-brand text-white shadow-lg scale-105'
                         : isCorrect
                           ? 'bg-green-50 border-green-400 text-green-700 hover:bg-green-100'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}
@@ -476,23 +571,26 @@ export default function App() {
             </div>
           </div>
 
-          {/* Comparison Cards Section - Enhanced for more space and premium feel */}
+          {/* Comparison Cards Section */}
           <div className="flex-1 overflow-hidden flex flex-col bg-slate-50/30">
-            <div className="px-6 py-3 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-brand" />
+            <div className="px-6 py-2.5 border-b border-slate-200 bg-white/90 backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-brand" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-slate-800 tracking-tight">
-                    Model Reasoning Analysis
-                  </h4>
-                  <p className="text-[10px] text-slate-400 font-medium -mt-0.5">Evaluating Option <span className="font-bold text-brand">{activeOption}</span></p>
+                  <h4 className="text-sm font-black text-slate-800 tracking-tight">Compare AI Reasoning</h4>
+                  <p className="text-[10px] text-slate-400 font-medium -mt-0.5">
+                    Viewing Option <span className="font-bold text-brand">{activeOption}</span>
+                    {votes[activeId]?.[activeOption] && (
+                      <span className="ml-2 text-green-600">· Best: <span className="font-black">{votes[activeId][activeOption].split('_').pop()}</span></span>
+                    )}
+                  </p>
                 </div>
               </div>
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 {models.map((m, i) => (
-                  <span key={m} className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600">
+                  <span key={m} className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
                     <div className={`w-2 h-2 rounded-full ${getModelColor(i)}`}></div>
                     {m.split('_').pop()?.toUpperCase()}
                   </span>
@@ -503,87 +601,90 @@ export default function App() {
             <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
               {models.map((model, idx) => {
                 const exp = activeMcq.explanations[model]?.[activeOption];
-                const isSelected = votes[activeId] === model;
-                
+                const isSelectedForOption = votes[activeId]?.[activeOption] === model;
+
                 return (
-                  <motion.div 
+                  <motion.div
                     key={model}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.1 }}
-                    className={`flex flex-col rounded-2xl overflow-hidden border-2 transition-all duration-300 group
-                      ${isSelected 
-                        ? 'border-brand ring-4 ring-brand/5 shadow-xl bg-white' 
-                        : 'border-slate-100 bg-white/60 hover:border-slate-300 hover:bg-white hover:shadow-lg'}`}
+                    className={`flex flex-col rounded-2xl overflow-hidden border-2 transition-all duration-300
+                      ${isSelectedForOption
+                        ? 'border-brand ring-4 ring-brand/10 shadow-xl bg-white'
+                        : 'border-slate-100 bg-white/70 hover:border-slate-300 hover:bg-white hover:shadow-lg'}`}
                   >
-                    <div className={`px-5 py-4 text-white flex justify-between items-center ${getModelColor(idx)}`}>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] opacity-70 font-bold uppercase tracking-widest">AI Model</span>
-                        <span className="text-sm font-black tracking-wide uppercase">{model.split('_').pop()}</span>
-                      </div>
-                      {isSelected && (
-                        <div className="bg-white/20 backdrop-blur-sm p-1.5 rounded-lg">
-                          <CheckCircle2 className="w-5 h-5 text-white" />
-                        </div>
+                    {/* Compact model header strip */}
+                    <div className={`px-4 py-2 flex items-center justify-between ${getModelColor(idx)}`}>
+                      <span className="text-white font-black text-xs uppercase tracking-widest">{model.split('_').pop()}</span>
+                      {isSelectedForOption && (
+                        <span className="flex items-center gap-1 bg-white/20 rounded px-2 py-0.5 text-white text-[10px] font-bold">
+                          <CheckCircle2 className="w-3 h-3" /> Best for {activeOption}
+                        </span>
                       )}
                     </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-5 space-y-5">
+
+                    {/* Content - main focus */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
                       {exp ? (
                         <>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-1 h-3 rounded-full bg-blue-500" />
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">The Explanation</span>
-                            </div>
-                            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
-                              <MathContent content={exp.explanation} size="sm" />
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider">💡 Explanation</span>
+                            <div className="bg-blue-50 p-3.5 rounded-xl border border-blue-100">
+                              <MathContent content={exp.explanation} size="base" />
                             </div>
                           </div>
 
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-1 h-3 rounded-full bg-amber-500" />
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Pedagogical Rationale</span>
-                            </div>
-                            <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/50">
-                              <MathContent content={exp.why_right} size="sm" />
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider">🎓 Why It Works</span>
+                            <div className="bg-amber-50 p-3.5 rounded-xl border border-amber-100">
+                              <MathContent content={exp.why_right} size="base" />
                             </div>
                           </div>
 
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-1 h-3 rounded-full bg-indigo-500" />
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Core Concept</span>
-                            </div>
-                            <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50">
-                              <MathContent content={exp.core_concept} size="sm" />
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-wider">🧠 Key Concept</span>
+                            <div className="bg-indigo-50 p-3.5 rounded-xl border border-indigo-100">
+                              <MathContent content={exp.core_concept} size="base" />
                             </div>
                           </div>
                         </>
                       ) : (
-                        <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center text-slate-300">
-                          <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
-                            <HelpCircle size={32} strokeWidth={1} />
-                          </div>
-                          <span className="text-xs font-bold uppercase tracking-widest">No data available</span>
+                        <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center text-slate-300">
+                          <HelpCircle size={28} strokeWidth={1} className="mb-2" />
+                          <span className="text-xs font-bold uppercase tracking-widest">No data for this option</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="p-4 bg-slate-50/80 border-t border-slate-100 mt-auto">
-                      <button 
-                        onClick={() => handleVote(model)}
-                        disabled={!exp}
-                        className={`w-full py-3 rounded-xl text-xs font-black transition-all duration-300
-                          ${isSelected 
-                            ? 'bg-brand text-white shadow-lg shadow-brand/20' 
-                            : !exp 
-                              ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                              : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-brand hover:text-brand hover:bg-orange-50'}`}
-                      >
-                        {isSelected ? 'SELECTED AS BEST' : 'VOTE FOR THIS'}
-                      </button>
+                    {/* Per-option vote footer */}
+                    <div className="px-4 pb-4 pt-2 border-t border-slate-100">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Best for option:</p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {options.map(opt => {
+                          const isVotedHere = votes[activeId]?.[opt] === model;
+                          const hasOtherVote = votes[activeId]?.[opt] && !isVotedHere;
+                          const optExp = activeMcq.explanations[model]?.[opt];
+                          return (
+                            <button
+                              key={opt}
+                              onClick={() => handleVote(model, opt)}
+                              disabled={!optExp}
+                              title={`Vote ${model.split('_').pop()} as best for Option ${opt}`}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all
+                                ${isVotedHere
+                                  ? 'bg-brand border-brand text-white shadow-md'
+                                  : hasOtherVote
+                                    ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-default'
+                                    : !optExp
+                                      ? 'bg-slate-50 border-slate-100 text-slate-200 cursor-not-allowed'
+                                      : 'bg-white border-slate-200 text-slate-500 hover:border-brand hover:text-brand hover:bg-orange-50'}`}
+                            >
+                              {opt}{isVotedHere ? ' ✓' : ''}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </motion.div>
                 );
@@ -593,18 +694,24 @@ export default function App() {
         </section>
       </main>
 
-      <Footer voteCount={Object.keys(votes).length} total={(mcqData as MCQ[]).length} />
+      <Footer voteCount={totalVoteEntries} total={(mcqData as MCQ[]).length} />
+
+      <AnimatePresence>
+        {showSplash && (
+          <SplashScreen onDone={() => setShowSplash(false)} />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showSummary && (
-          <VoteSummary 
-            votes={votes} 
-            onClose={() => setShowSummary(false)} 
+          <VoteSummary
+            votes={votes}
+            onClose={() => setShowSummary(false)}
             questions={mcqData as MCQ[]}
           />
         )}
         {selectedImage && (
-          <ImageModal 
+          <ImageModal
             image={selectedImage.src}
             isBase64={selectedImage.isBase64}
             count={selectedImage.total}
