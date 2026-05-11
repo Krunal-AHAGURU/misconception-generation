@@ -45,10 +45,10 @@ interface MCQ {
 
 // --- Components ---
 
-const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen }: { onShowVotes: () => void, onToggleSidebar: () => void, isSidebarOpen: boolean }) => (
-  <header className="h-14 border-b border-slate-200/60 flex items-center justify-between px-4 bg-white/80 backdrop-blur-md shrink-0 sticky top-0 z-50 shadow-sm">
+const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen, voteCount, total }: { onShowVotes: () => void, onToggleSidebar: () => void, isSidebarOpen: boolean, voteCount: number, total: number }) => (
+  <header className="h-16 border-b border-slate-200/60 flex items-center justify-between px-6 bg-white/80 backdrop-blur-xl shrink-0 sticky top-0 z-50 shadow-sm">
     <div className="flex items-center gap-4">
-      <button 
+      <button
         onClick={onToggleSidebar}
         className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-500"
         title={isSidebarOpen ? "Close Sidebar" : "Open Sidebar"}
@@ -57,14 +57,31 @@ const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen }: { onShowVotes: 
       </button>
       <div className="flex items-center gap-3">
         <div className="bg-brand text-white font-extrabold p-1.5 rounded-lg text-[10px] px-2.5 select-none tracking-tighter shadow-sm shadow-brand/20">AHAGURU</div>
-        <h1 className="font-bold text-base text-slate-800 tracking-tight">MCQ Reasoning Assistant</h1>
-        <span className="bg-slate-100 text-slate-500 text-[9px] px-2 py-0.5 rounded-full uppercase font-bold tracking-widest hidden sm:inline-block border border-slate-200/50">INTERNAL VALIDATION v2.5</span>
+        <div className="flex flex-col">
+          <h1 className="font-black text-sm text-slate-800 tracking-tight leading-none mb-0.5">MCQ Reasoning Assistant</h1>
+          <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest leading-none">Internal Validation v3.0</span>
+        </div>
+      </div>
+    </div>
+    <div className="flex-1 max-w-md mx-8 hidden lg:block">
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
+          <span>Global Progress</span>
+          <span>{Math.round((voteCount / total) * 100)}% Complete</span>
+        </div>
+        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${(voteCount / total) * 100}%` }}
+            className="h-full bg-gradient-to-r from-brand to-orange-400 rounded-full"
+          />
+        </div>
       </div>
     </div>
     <div className="flex items-center gap-4">
       <div className="flex-col items-end hidden md:flex leading-none">
         <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest">Reviewer</span>
-        <span className="text-[11px] font-bold text-slate-700 italic opacity-80">Director / Mentor</span>
+        <span className="text-[11px] font-bold text-slate-700 italic opacity-80">Internal Reviewer</span>
       </div>
       <button
         id="check-vote-btn"
@@ -98,7 +115,7 @@ const Sidebar = ({
   emptyQuestions?: MCQ[];
   emptyCount?: number;
 }) => (
-  <motion.aside 
+  <motion.aside
     initial={{ width: 0, opacity: 0 }}
     animate={{ width: 256, opacity: 1 }}
     exit={{ width: 0, opacity: 0 }}
@@ -170,7 +187,7 @@ const Sidebar = ({
     </div>
 
     <div className="p-4 border-t border-slate-200/60 bg-slate-100/30 backdrop-blur-sm">
-      <button 
+      <button
         onClick={() => onToggleEmpty?.()}
         className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all border
           ${showEmpty ? 'bg-white border-slate-200 shadow-sm' : 'bg-transparent border-transparent hover:bg-slate-200/50'}`}
@@ -189,7 +206,7 @@ const Sidebar = ({
 
       <AnimatePresence>
         {showEmpty && (
-          <motion.div 
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -200,8 +217,8 @@ const Sidebar = ({
                 key={q.id}
                 onClick={() => onSelect(q.id)}
                 className={`w-full text-left p-2.5 rounded-xl text-[10px] transition-all group
-                  ${activeId === q.id 
-                    ? 'bg-white font-bold text-slate-900 shadow-sm border border-slate-100' 
+                  ${activeId === q.id
+                    ? 'bg-white font-bold text-slate-900 shadow-sm border border-slate-100'
                     : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}
               >
                 <div className="flex items-center gap-2">
@@ -555,13 +572,15 @@ export default function App() {
   const [selectedImage, setSelectedImage] = useState<{ src: string; isBase64: boolean; index: number; total: number } | null>(null);
 
   const [showEmpty, setShowEmpty] = useState(false);
+  const [viewDensity, setViewDensity] = useState<'comfortable' | 'compact'>('comfortable');
+  const [topHeight, setTopHeight] = useState(30); // 30% default
+  const [isResizing, setIsResizing] = useState(false);
 
   const questionsWithExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length > 0);
   const questionsWithoutExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length === 0);
 
   const activeMcq = sortedMcqs.find(q => q.id === activeId) || sortedMcqs[0];
   const models = Object.keys(activeMcq.explanations);
-  const [viewDensity, setViewDensity] = useState<'comfortable' | 'compact'>('comfortable');
 
   useEffect(() => {
     setActiveOption(activeMcq.correct_answer);
@@ -581,6 +600,55 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('ag-mcq-votes-v2', JSON.stringify(votes));
   }, [votes]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toUpperCase();
+
+      // Options: A, B, C, D
+      if (options.includes(key)) {
+        setActiveOption(key);
+      }
+
+      // Voting: 1, 2, 3, 4
+      if (['1', '2', '3', '4'].includes(key)) {
+        const idx = parseInt(key) - 1;
+        if (models[idx]) {
+          handleVote(models[idx], activeOption);
+        }
+      }
+
+      // Sidebar Toggle: [
+      if (e.key === '[') {
+        setIsSidebarOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [options, models, activeOption, activeId]);
+
+  // Resizing logic
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const headerHeight = 64; // Approx height of top nav
+      const availableHeight = window.innerHeight - headerHeight;
+      const newHeight = ((e.clientY - headerHeight) / availableHeight) * 100;
+      setTopHeight(Math.min(Math.max(newHeight, 15), 60)); // Limit between 15% and 60%
+    };
+
+    const handleMouseUp = () => setIsResizing(false);
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   // Vote for a model for the currently viewed option
   const handleVote = (model: string, option: string) => {
@@ -608,13 +676,15 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-[#f8fafc] overflow-hidden font-sans selection:bg-brand/10">
       {/* Decorative background elements */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0" 
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0"
         style={{ backgroundImage: `radial-gradient(#f97316 1px, transparent 1px)`, backgroundSize: '24px 24px' }}></div>
-      
-      <Header 
-        onShowVotes={() => setShowSummary(true)} 
+
+      <Header
+        onShowVotes={() => setShowSummary(true)}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         isSidebarOpen={isSidebarOpen}
+        voteCount={totalVoteEntries}
+        total={sortedMcqs.length}
       />
 
       <main className="flex flex-1 overflow-hidden relative z-10">
@@ -637,133 +707,105 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        <section className="flex-1 flex flex-col bg-white overflow-hidden">
-          {/* Question Section - Compact */}
-          <div className="px-6 py-3 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-slate-50 shrink-0">
-            <div className="flex justify-between items-start gap-4 mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black text-brand uppercase tracking-widest">Q#{activeMcq.id}</span>
-                {(activeMcq.solution_images_base64?.length || activeMcq.solution_image_urls?.length) > 0 && (
-                  <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold">📎 {(activeMcq.solution_images_base64?.length || 0) + (activeMcq.solution_image_urls?.length || 0)}</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {(activeMcq.solution_images_base64?.length || 0) > 0 && (
-                  <button
-                    onClick={() => setSelectedImage({
-                      src: activeMcq.solution_images_base64![0],
-                      isBase64: true,
-                      index: 0,
-                      total: activeMcq.solution_images_base64!.length
-                    })}
-                    className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded text-xs transition-all"
-                  >
-                    Solution
-                  </button>
-                )}
-                {(activeMcq.solution_image_urls?.length || 0) > 0 && (
-                  <button
-                    onClick={() => setSelectedImage({
-                      src: activeMcq.solution_image_urls![0],
-                      isBase64: false,
-                      index: 0,
-                      total: activeMcq.solution_image_urls!.length
-                    })}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded text-xs transition-all"
-                  >
-                    Reference
-                  </button>
-                )}
-                <span className={`text-xs font-bold px-2 py-1 rounded ${isQuestionVoted(activeId) ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                  {isQuestionVoted(activeId) ? `✓ ${Object.keys(votes[activeId] || {}).length} voted` : '○ Not voted'}
-                </span>
-              </div>
-            </div>
-
-            {/* Question Text */}
-            <div className="bg-white/40 backdrop-blur-sm p-4 rounded-[1.5rem] border border-blue-200/50 shadow-sm">
-              <div className="text-base font-semibold text-slate-900 leading-relaxed">
-                <MathContent content={activeMcq.question_text} size="base" />
-              </div>
-            </div>
-          </div>
-
-          {/* Options Selection - Much more compact */}
-          <div className="px-6 py-2 border-b border-slate-200 bg-white shrink-0 shadow-sm z-10">
-            <div className="flex items-center gap-2 overflow-x-auto py-1 scroll-hide">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Options:</span>
-              {options.map(opt => {
-                const isCorrect = activeMcq.correct_answer === opt;
-                const isActive = activeOption === opt;
-
-                return (
-                  <button
-                    key={opt}
-                    onClick={() => setActiveOption(opt)}
-                    className={`relative min-w-[60px] h-10 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-1.5 border-2
-                      ${isActive
-                        ? 'bg-brand border-brand text-white shadow-lg shadow-brand/20 scale-105 z-10'
-                        : isCorrect
-                          ? 'bg-green-50 border-green-400 text-green-700 hover:bg-green-100'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    {opt}
-                    {isCorrect && !isActive && <div className="w-1.5 h-1.5 rounded-full bg-green-500" />}
-                    {isActive && isCorrect && <CheckCircle className="w-3 h-3 text-white" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Comparison Cards Section */}
-          <div className="flex-1 overflow-hidden flex flex-col bg-slate-50/30">
-            <div className="px-6 py-2.5 border-b border-slate-200 bg-white/90 backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4 text-brand" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-slate-800 tracking-tight">Compare AI Reasoning</h4>
-                  <p className="text-[10px] text-slate-400 font-medium -mt-0.5">
-                    Viewing Option <span className="font-bold text-brand">{activeOption}</span>
-                    {votes[activeId]?.[activeOption] && (
-                      <span className="ml-2 text-green-600">· Best: <span className="font-black">{votes[activeId][activeOption].split('_').pop()}</span></span>
+        <section className="flex-1 flex flex-col bg-slate-50/20 overflow-hidden">
+          {/* 1. Resizable Context Bar (Question + Options) */}
+          <div
+            className="shrink-0 bg-white border-b border-slate-200/60 shadow-sm z-30 flex flex-col relative"
+            style={{ height: `${topHeight}%` }}
+          >
+            <div className="flex-1 flex items-stretch overflow-hidden">
+              {/* Question Portion */}
+              <div className="flex-1 border-r border-slate-100 flex flex-col p-4 min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-brand bg-orange-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Q#{activeMcq.id}</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Question Text</span>
+                  </div>
+                  <div className="flex gap-1">
+                    {(activeMcq.solution_images_base64?.length || 0) > 0 && (
+                      <button
+                        onClick={() => setSelectedImage({ src: activeMcq.solution_images_base64![0], isBase64: true, index: 0, total: activeMcq.solution_images_base64!.length })}
+                        className="flex items-center gap-1 px-2 py-1 hover:bg-green-50 rounded text-slate-400 hover:text-green-600 transition-colors text-[10px] font-bold"
+                      >
+                        <CheckCircle size={14} /> Solution
+                      </button>
                     )}
-                  </p>
+                    {(activeMcq.solution_image_urls?.length || 0) > 0 && (
+                      <button
+                        onClick={() => setSelectedImage({ src: activeMcq.solution_image_urls![0], isBase64: false, index: 0, total: activeMcq.solution_image_urls!.length })}
+                        className="flex items-center gap-1 px-2 py-1 hover:bg-blue-50 rounded text-slate-400 hover:text-blue-600 transition-colors text-[10px] font-bold"
+                      >
+                        <Info size={14} /> Reference
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
+                  <div className="text-slate-800 font-medium">
+                    <MathContent content={activeMcq.question_text} size="base" />
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                  <button 
-                    onClick={() => setViewDensity('comfortable')}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all
-                      ${viewDensity === 'comfortable' ? 'bg-white text-brand shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                    Comfortable
-                  </button>
-                  <button 
-                    onClick={() => setViewDensity('compact')}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all
-                      ${viewDensity === 'compact' ? 'bg-white text-brand shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                    Compact
-                  </button>
+
+              {/* Options Portion */}
+              <div className="w-[450px] flex flex-col p-4 bg-slate-50/30">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Option</span>
+                    <span className="text-[8px] bg-white border border-slate-200 text-slate-400 px-1.5 py-0.5 rounded font-black uppercase">A-D</span>
+                  </div>
+                  <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase flex items-center gap-1.5
+                    ${isQuestionVoted(activeId) ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${isQuestionVoted(activeId) ? 'bg-green-500' : 'bg-orange-500'}`} />
+                    {isQuestionVoted(activeId) ? 'Validated' : 'Pending'}
+                  </div>
                 </div>
-                <div className="flex gap-3">
-                  {models.map((m, i) => (
-                    <span key={m} className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-                      <div className={`w-2 h-2 rounded-full ${getModelColor(i)}`}></div>
-                      {m.split('_').pop()?.toUpperCase()}
-                    </span>
-                  ))}
+                <div className="flex flex-wrap gap-2 overflow-y-auto pr-1 scrollbar-thin">
+                  {options.map(opt => {
+                    const isCorrect = activeMcq.correct_answer === opt;
+                    const isActive = activeOption === opt;
+                    const hasVote = !!votes[activeId]?.[opt];
+
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => setActiveOption(opt)}
+                        className={`relative min-w-[60px] h-10 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 border-2
+                          ${isActive
+                            ? 'bg-brand border-brand text-white shadow-lg shadow-brand/20 scale-105 z-10'
+                            : isCorrect
+                              ? 'bg-green-50 border-green-200 text-green-700 hover:border-green-400'
+                              : 'bg-white border-slate-200 text-slate-400 hover:border-slate-400'}`}
+                      >
+                        {opt}
+                        {hasVote && !isActive && <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />}
+                        {isActive && isCorrect && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Visual Cue for Shortcuts */}
+                <div className="mt-auto pt-3 flex items-center justify-center gap-4 text-[9px] font-bold text-slate-300 uppercase tracking-widest border-t border-slate-200/50">
+                  <div className="flex items-center gap-1"><span className="bg-slate-100 px-1 rounded text-slate-400">1-4</span> Vote</div>
+                  <div className="flex items-center gap-1"><span className="bg-slate-100 px-1 rounded text-slate-400">[</span> Sidebar</div>
                 </div>
               </div>
             </div>
 
-            <div className={`flex-1 overflow-x-auto overflow-y-hidden p-8 flex gap-8 scroll-smooth pb-12
-              ${models.length <= 3 ? 'justify-center' : 'justify-start'}
-              scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent`}>
+            {/* Resizable Divider Handle */}
+            <div
+              onMouseDown={() => setIsResizing(true)}
+              className={`absolute -bottom-1 left-0 w-full h-2 cursor-ns-resize z-40 transition-colors group
+                ${isResizing ? 'bg-brand/40' : 'hover:bg-brand/20'}`}
+            >
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-1 bg-slate-300 rounded-full group-hover:bg-brand/50 transition-colors" />
+            </div>
+          </div>
+
+          {/* 2. Comparison Zone */}
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 flex gap-6 scroll-smooth pb-10 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+              {/* Model Cards */}
               {models.map((model, idx) => {
                 const exp = activeMcq.explanations[model]?.[activeOption];
                 const isSelectedForOption = votes[activeId]?.[activeOption] === model;
@@ -781,9 +823,12 @@ export default function App() {
                         : 'border-white bg-white/80 hover:border-brand/20 hover:bg-white hover:shadow-xl'}`}
                   >
                     <div className={`px-4 py-2.5 flex items-center justify-between sticky top-0 z-20 ${getModelColor(idx)} border-b border-white/10`}>
-                      <span className="text-white font-black text-xs uppercase tracking-[0.15em]">{model.split('_').pop()}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-black text-xs uppercase tracking-[0.15em]">{model.split('_').pop()}</span>
+                        <span className="text-[9px] bg-white/20 text-white/80 px-1.5 py-0.5 rounded font-black">Key: {idx + 1}</span>
+                      </div>
                       {isSelectedForOption && (
-                        <motion.span 
+                        <motion.span
                           initial={{ scale: 0.9, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           className="flex items-center gap-1 bg-white/30 backdrop-blur-md rounded-lg px-2.5 py-1 text-white text-[10px] font-black shadow-sm"
@@ -796,47 +841,48 @@ export default function App() {
                     <div className={`flex-1 overflow-y-auto ${viewDensity === 'compact' ? 'p-3 space-y-3' : 'p-5 space-y-5'} scrollbar-thin`}>
                       {exp ? (
                         <div className="space-y-4">
-                             <div className="space-y-2">
-                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-blue-50/10 backdrop-blur-sm py-1 z-10">
-                              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                          <div className="space-y-2">
+                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
+                              <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
                               Explanation
                             </span>
-                            <div className="bg-blue-50/40 p-5 rounded-3xl border border-blue-100/50 shadow-inner">
+                            <div className="bg-blue-50/50 p-5 rounded-[2rem] border border-blue-100 shadow-sm">
                               <MathContent content={exp.explanation} size="lg" />
                             </div>
                           </div>
 
                           <div className="space-y-2.5">
-                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-amber-50/10 backdrop-blur-sm py-1 z-10">
-                              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
+                              <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
                               Why It Works
                             </span>
-                            <div className="bg-amber-50/40 p-5 rounded-3xl border border-amber-100/50 shadow-inner">
+                            <div className="bg-amber-50/50 p-5 rounded-[2rem] border border-amber-100 shadow-sm">
                               <MathContent content={exp.why_right} size="lg" />
                             </div>
                           </div>
 
                           <div className="space-y-2.5">
-                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-indigo-50/10 backdrop-blur-sm py-1 z-10">
-                              <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
+                              <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]" />
                               Key Concept
                             </span>
-                            <div className="bg-indigo-50/40 p-5 rounded-3xl border border-indigo-100/50 shadow-inner">
+                            <div className="bg-indigo-50/50 p-5 rounded-[2rem] border border-indigo-100 shadow-sm">
                               <MathContent content={exp.core_concept} size="lg" />
                             </div>
                           </div>
 
                           {exp.next_step && (
                             <div className="space-y-2.5">
-                              <span className="text-[10px] font-black text-green-700 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-green-50/10 backdrop-blur-sm py-1 z-10">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                              <span className="text-[10px] font-black text-green-700 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
+                                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
                                 Next Step
                               </span>
-                              <div className="bg-green-50/40 p-5 rounded-3xl border border-green-100/50 shadow-inner">
+                              <div className="bg-green-50/50 p-5 rounded-[2rem] border border-green-100 shadow-sm">
                                 <MathContent content={exp.next_step} size="lg" />
                               </div>
                             </div>
-                          )} </div>
+                          )}
+                        </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center text-slate-300">
                           <HelpCircle size={28} strokeWidth={1} className="mb-2" />

@@ -3,7 +3,8 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-brand: #f97316; /* orange-500 */
+  --color-brand: #f97316;
+  /* orange-500 */
 }
 
 @layer base {
@@ -17,6 +18,7 @@
 .scroll-hide::-webkit-scrollbar {
   width: 4px;
 }
+
 .scroll-hide::-webkit-scrollbar-thumb {
   background: #e2e8f0;
   border-radius: 10px;
