@@ -250,13 +250,14 @@ const ImageModal = ({
 const VoteSummary = ({
   votes,
   onClose,
+  onClearVotes,
   questions
 }: {
   votes: Record<number, Record<string, string>>;
   onClose: () => void;
+  onClearVotes: () => void;
   questions: MCQ[];
 }) => {
-  // Count how many times each model won across all questions & options
   const modelWins: Record<string, number> = {};
   Object.values(votes).forEach(optMap => {
     Object.values(optMap).forEach(modelName => {
@@ -265,6 +266,7 @@ const VoteSummary = ({
   });
   const totalVotes = Object.values(modelWins).reduce((a, b) => a + b, 0);
   const votedQuestions = questions.filter(q => votes[q.id] && Object.keys(votes[q.id]).length > 0);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -281,10 +283,10 @@ const VoteSummary = ({
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="relative bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
       >
-        <div className="p-8 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-8 py-6 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">Validation Summary</h2>
-            <p className="text-gray-500 font-medium">Model performance overview</p>
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">Review Summary</h2>
+            <p className="text-gray-500 font-medium text-sm">{totalVotes} vote{totalVotes !== 1 ? 's' : ''} across {votedQuestions.length} question{votedQuestions.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-brand shadow-sm border border-gray-100">
             <BarChart3 size={24} />
@@ -297,28 +299,27 @@ const VoteSummary = ({
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
                 <Info size={32} />
               </div>
-              <p className="text-gray-500 font-bold">No votes recorded yet</p>
-              <p className="text-sm text-gray-400">Vote on options to see results here.</p>
+              <p className="text-gray-500 font-bold">No votes yet</p>
+              <p className="text-sm text-gray-400">Select the best AI response for each option to build your report.</p>
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Model score cards */}
               <div>
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Overall Wins</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {Object.entries(modelWins).sort(([,a],[,b]) => b - a).map(([model, count]) => (
+                  {Object.entries(modelWins).sort(([, a], [, b]) => b - a).map(([model, count]) => (
                     <div key={model} className="p-4 rounded-2xl bg-orange-50 border border-orange-100">
                       <div className="text-[10px] font-black text-brand/60 uppercase tracking-widest mb-1">{model.split('_').pop()}</div>
                       <div className="text-2xl font-black text-slate-900">{count} <span className="text-xs font-medium text-slate-500">/ {totalVotes}</span></div>
                       <div className="mt-1.5 h-1.5 bg-orange-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand rounded-full" style={{ width: `${Math.round(count/totalVotes*100)}%` }} />
+                        <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${Math.round(count / totalVotes * 100)}%` }} />
                       </div>
+                      <div className="text-[10px] text-slate-400 mt-1">{Math.round(count / totalVotes * 100)}% win rate</div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Per-question breakdown */}
               <div>
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Question Breakdown</h3>
                 <div className="space-y-2">
@@ -329,9 +330,10 @@ const VoteSummary = ({
                         <span className="text-[10px] text-gray-400">{Object.keys(votes[q.id]).length} option(s) reviewed</span>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {Object.entries(votes[q.id]).map(([opt, model]) => (
-                          <div key={opt} className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-200 rounded-lg">
-                            <span className="text-[10px] font-black text-brand">Opt {opt}:</span>
+                        {Object.entries(votes[q.id]).sort().map(([opt, model]) => (
+                          <div key={opt} className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gray-200 rounded-lg">
+                            <span className="text-[10px] font-black text-brand">Option {opt}</span>
+                            <span className="text-[10px] text-gray-300">→</span>
                             <span className="text-[10px] font-bold text-gray-700">{model.split('_').pop()}</span>
                           </div>
                         ))}
@@ -344,14 +346,41 @@ const VoteSummary = ({
           )}
         </div>
 
-        <div className="px-6 pb-6 flex justify-between items-center border-t border-gray-100 pt-4">
-          <span className="text-xs text-gray-400 font-medium">{totalVotes} vote{totalVotes !== 1 ? 's' : ''} recorded</span>
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 bg-brand text-white font-bold rounded-xl hover:opacity-90 transition-all shadow-lg shadow-orange-100"
-          >
-            Back to Review
-          </button>
+        <div className="px-6 pb-6 border-t border-gray-100 pt-4">
+          {confirmClear ? (
+            <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <span className="text-sm font-bold text-red-700">Clear all votes and start fresh?</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmClear(false)}
+                  className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 font-bold rounded-lg text-xs hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { onClearVotes(); onClose(); }}
+                  className="px-3 py-1.5 bg-red-500 text-white font-bold rounded-lg text-xs hover:bg-red-600 transition-all"
+                >
+                  Yes, Clear All
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setConfirmClear(true)}
+                className="px-4 py-2 text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-100 hover:border-red-200 font-bold rounded-xl text-xs transition-all"
+              >
+                🗑 Clear All Votes
+              </button>
+              <button
+                onClick={onClose}
+                className="px-6 py-2.5 bg-brand text-white font-bold rounded-xl hover:opacity-90 transition-all shadow-lg shadow-orange-100"
+              >
+                Back to Review
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
@@ -629,14 +658,14 @@ export default function App() {
                       {exp ? (
                         <>
                           <div className="space-y-1.5">
-                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider">💡 Explanation</span>
+                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider">💡 Correct Understanding</span>
                             <div className="bg-blue-50 p-3.5 rounded-xl border border-blue-100">
                               <MathContent content={exp.explanation} size="base" />
                             </div>
                           </div>
 
                           <div className="space-y-1.5">
-                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider">🎓 Why It Works</span>
+                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider">🎓 Why Your Answer Seems Right</span>
                             <div className="bg-amber-50 p-3.5 rounded-xl border border-amber-100">
                               <MathContent content={exp.why_right} size="base" />
                             </div>
@@ -648,6 +677,15 @@ export default function App() {
                               <MathContent content={exp.core_concept} size="base" />
                             </div>
                           </div>
+
+                          {exp.next_step && (
+                            <div className="space-y-1.5">
+                              <span className="text-[10px] font-black text-green-600 uppercase tracking-wider">🚀What to do next</span>
+                              <div className="bg-green-50 p-3.5 rounded-xl border border-green-100">
+                                <MathContent content={exp.next_step} size="base" />
+                              </div>
+                            </div>
+                          )}
                         </>
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center text-slate-300">
@@ -657,34 +695,53 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* Per-option vote footer */}
-                    <div className="px-4 pb-4 pt-2 border-t border-slate-100">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Best for option:</p>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {options.map(opt => {
-                          const isVotedHere = votes[activeId]?.[opt] === model;
-                          const hasOtherVote = votes[activeId]?.[opt] && !isVotedHere;
-                          const optExp = activeMcq.explanations[model]?.[opt];
-                          return (
-                            <button
-                              key={opt}
-                              onClick={() => handleVote(model, opt)}
-                              disabled={!optExp}
-                              title={`Vote ${model.split('_').pop()} as best for Option ${opt}`}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all
-                                ${isVotedHere
-                                  ? 'bg-brand border-brand text-white shadow-md'
-                                  : hasOtherVote
-                                    ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-default'
-                                    : !optExp
+                    {/* Per-option vote footer - improved UX */}
+                    <div className="px-4 pb-4 pt-3 border-t border-slate-100 space-y-2">
+                      {/* Primary: vote for currently viewed option */}
+                      <button
+                        onClick={() => handleVote(model, activeOption)}
+                        disabled={!exp}
+                        className={`w-full py-2.5 rounded-xl text-xs font-black transition-all duration-200 flex items-center justify-center gap-2
+                          ${isSelectedForOption
+                            ? 'bg-brand text-white shadow-md shadow-brand/20'
+                            : !exp
+                              ? 'bg-slate-50 text-slate-200 cursor-not-allowed border border-slate-100'
+                              : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-brand hover:text-brand hover:bg-orange-50'}`}
+                      >
+                        {isSelectedForOption
+                          ? <><CheckCircle2 className="w-3.5 h-3.5" /> Best for Option {activeOption}</>
+                          : <>Pick as Best · Option {activeOption}</>}
+                      </button>
+
+                      {/* Secondary: vote chips for other options */}
+                      {options.filter(o => o !== activeOption).length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Other options:</span>
+                          {options.filter(o => o !== activeOption).map(opt => {
+                            const isVotedHere = votes[activeId]?.[opt] === model;
+                            const hasOtherVote = votes[activeId]?.[opt] && !isVotedHere;
+                            const optExp = activeMcq.explanations[model]?.[opt];
+                            return (
+                              <button
+                                key={opt}
+                                onClick={() => handleVote(model, opt)}
+                                disabled={!optExp || !!hasOtherVote}
+                                title={`Mark as best for Option ${opt}`}
+                                className={`px-2 py-0.5 rounded text-[10px] font-black border transition-all
+                                  ${isVotedHere
+                                    ? 'bg-brand border-brand text-white'
+                                    : hasOtherVote
                                       ? 'bg-slate-50 border-slate-100 text-slate-200 cursor-not-allowed'
-                                      : 'bg-white border-slate-200 text-slate-500 hover:border-brand hover:text-brand hover:bg-orange-50'}`}
-                            >
-                              {opt}{isVotedHere ? ' ✓' : ''}
-                            </button>
-                          );
-                        })}
-                      </div>
+                                      : !optExp
+                                        ? 'bg-slate-50 border-slate-100 text-slate-200 cursor-not-allowed'
+                                        : 'bg-white border-slate-200 text-slate-400 hover:border-brand hover:text-brand'}`}
+                              >
+                                {opt}{isVotedHere ? ' ✓' : ''}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 );
@@ -707,6 +764,11 @@ export default function App() {
           <VoteSummary
             votes={votes}
             onClose={() => setShowSummary(false)}
+            onClearVotes={() => {
+              localStorage.removeItem('ag-mcq-votes-v2');
+              setVotes({});
+              setShowSummary(false);
+            }}
             questions={mcqData as MCQ[]}
           />
         )}
