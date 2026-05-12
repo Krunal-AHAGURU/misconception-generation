@@ -586,8 +586,8 @@ export default function App() {
   const models = Object.keys(activeMcq.explanations);
 
   useEffect(() => {
-    setActiveOption(activeMcq.correct_answer);
-  }, [activeId, activeMcq.correct_answer]);
+    setActiveOption('A');
+  }, [activeId]);
 
   const getOptions = () => {
     const optionSet = new Set<string>();
