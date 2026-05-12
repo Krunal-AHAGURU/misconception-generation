@@ -550,6 +550,70 @@ const SplashScreen = ({ onDone }: { onDone: () => void }) => {
   );
 };
 
+const TourGuide = ({ onComplete }: { onComplete: () => void }) => {
+  const [step, setStep] = useState(1);
+  const totalSteps = 2;
+
+  const steps = [
+    {
+      targetId: 'tour-options',
+      title: 'Compare Options',
+      content: 'Change options to view different model reasonings. Compare them and vote for the best generated output using the Vote buttons below.',
+    },
+    {
+      targetId: 'check-vote-btn',
+      title: 'Check Results',
+      content: 'Once done, you can check your overall results and progress here.',
+    }
+  ];
+
+  const currentStep = steps[step - 1];
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    const el = document.getElementById(currentStep.targetId);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + 15,
+        left: rect.left + rect.width / 2,
+      });
+      el.classList.add('ring-4', 'ring-brand', 'ring-offset-2', 'z-[101]', 'relative', 'bg-white', 'rounded-lg');
+      return () => el.classList.remove('ring-4', 'ring-brand', 'ring-offset-2', 'z-[101]', 'relative', 'bg-white', 'rounded-lg');
+    }
+  }, [step]);
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 z-[100] backdrop-blur-[2px] transition-all flex items-center justify-center">
+      <div
+        className="absolute bg-white rounded-xl shadow-2xl p-5 w-[320px] border border-slate-200"
+        style={{ top: coords.top || '50%', left: coords.left || '50%', transform: coords.top ? 'translateX(-50%)' : 'translate(-50%, -50%)', transition: 'all 0.3s ease-out' }}
+      >
+        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-l border-t border-slate-200" />
+
+        <div className="relative">
+          <div className="flex justify-between items-start mb-3">
+            <h3 className="font-black text-sm text-slate-800 uppercase tracking-widest">{currentStep.title}</h3>
+            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+              {step} / {totalSteps}
+            </span>
+          </div>
+          <p className="text-[13px] text-slate-600 mb-5 leading-relaxed font-medium">{currentStep.content}</p>
+          <div className="flex justify-between items-center">
+            <button onClick={onComplete} className="text-[11px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest">Skip</button>
+            <button
+              onClick={() => step < totalSteps ? setStep(step + 1) : onComplete()}
+              className="bg-brand text-white px-4 py-2 rounded-lg text-xs font-black shadow-md hover:bg-brand-dark transition-colors uppercase tracking-widest"
+            >
+              {step < totalSteps ? 'Next Step' : 'Get Started'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -578,6 +642,14 @@ export default function App() {
   const [viewDensity, setViewDensity] = useState<'comfortable' | 'compact'>('comfortable');
   const [topHeight, setTopHeight] = useState(30); // 30% default
   const [isResizing, setIsResizing] = useState(false);
+  const [showTour, setShowTour] = useState(() => {
+    return localStorage.getItem('ag-mcq-tour-seen') !== 'true';
+  });
+
+  const completeTour = () => {
+    localStorage.setItem('ag-mcq-tour-seen', 'true');
+    setShowTour(false);
+  };
 
   const questionsWithExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length > 0);
   const questionsWithoutExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length === 0);
@@ -762,7 +834,7 @@ export default function App() {
               </div>
 
               {/* Options Portion */}
-              <div className="w-[450px] flex flex-col p-4 bg-slate-50/30">
+              <div id="tour-options" className="w-[450px] flex flex-col p-4 bg-slate-50/30 transition-all">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Option</span>
@@ -994,6 +1066,12 @@ export default function App() {
       </main>
 
       <Footer voteCount={totalVoteEntries} total={(mcqData as MCQ[]).length} />
+
+      <AnimatePresence>
+        {showTour && !showSplash && (
+          <TourGuide onComplete={completeTour} />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showSplash && (
