@@ -14,7 +14,10 @@ import {
   LayoutDashboard,
   CheckCircle,
   HelpCircle,
-  Hash
+  Hash,
+  AlertTriangle,
+  Zap,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import mcqData from './data/mcqs.json';
@@ -673,11 +676,22 @@ export default function App() {
     return accents[index % accents.length];
   };
 
+  // Helper to extract option text from question_text
+  const getOptionText = (qText: string, opt: string) => {
+    try {
+      const regex = new RegExp(`\\(${opt}\\)\\s*([\\s\\S]*?)(?=\\([A-D]\\)|$)`, 'i');
+      const match = qText.match(regex);
+      return match ? match[1].trim() : `Option ${opt}`;
+    } catch (e) {
+      return `Option ${opt}`;
+    }
+  };
+
   return (
-    <div className="h-screen flex flex-col bg-[#f8fafc] overflow-hidden font-sans selection:bg-brand/10">
+    <div className="h-screen flex flex-col bg-slate-50 overflow-hidden font-sans selection:bg-brand/10 antialiased text-slate-900">
       {/* Decorative background elements */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0"
-        style={{ backgroundImage: `radial-gradient(#f97316 1px, transparent 1px)`, backgroundSize: '24px 24px' }}></div>
+      <div className="fixed inset-0 pointer-events-none opacity-[0.02] z-0"
+        style={{ backgroundImage: `radial-gradient(#64748b 1px, transparent 1px)`, backgroundSize: '32px 32px' }}></div>
 
       <Header
         onShowVotes={() => setShowSummary(true)}
@@ -816,7 +830,7 @@ export default function App() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    className={`flex flex-col rounded-[2rem] overflow-hidden border-2 transition-all duration-300 shrink-0
+                    className={`flex flex-col rounded-[0.5rem] overflow-hidden border-2 transition-all duration-300 shrink-0
                       ${models.length > 3 ? 'w-[400px]' : 'flex-1 max-w-[500px]'}
                       ${isSelectedForOption
                         ? 'border-brand ring-8 ring-brand/5 shadow-2xl bg-white scale-[1.02] z-10'
@@ -825,7 +839,7 @@ export default function App() {
                     <div className={`px-4 py-2.5 flex items-center justify-between sticky top-0 z-20 ${getModelColor(idx)} border-b border-white/10`}>
                       <div className="flex items-center gap-2">
                         <span className="text-white font-black text-xs uppercase tracking-[0.15em]">{model.split('_').pop()}</span>
-                        <span className="text-[9px] bg-white/20 text-white/80 px-1.5 py-0.5 rounded font-black">Key: {idx + 1}</span>
+                        {/* <span className="text-[9px] bg-white/20 text-white/80 px-1.5 py-0.5 rounded font-black">Key: {idx + 1}</span> */}
                       </div>
                       {isSelectedForOption && (
                         <motion.span
@@ -838,46 +852,80 @@ export default function App() {
                       )}
                     </div>
 
-                    <div className={`flex-1 overflow-y-auto ${viewDensity === 'compact' ? 'p-3 space-y-3' : 'p-5 space-y-5'} scrollbar-thin`}>
+                    <div className={`flex-1 overflow-y-auto p-5 space-y-6 scrollbar-thin bg-white`}>
                       {exp ? (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
+                          {/* Dual Header: Your Answer vs Correct Answer */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 rounded-xl bg-rose-50 border border-rose-100/50 shadow-sm">
+                              <span className="block text-[9px] font-black text-rose-600 uppercase tracking-[0.1em] mb-2">Your Answer</span>
+                              <div className="text-slate-800 text-sm font-semibold leading-relaxed">
+                                <MathContent content={getOptionText(activeMcq.question_text, activeOption)} size="sm" />
+                              </div>
+                            </div>
+                            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100/50 shadow-sm">
+                              <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-[0.1em] mb-2">Correct Answer</span>
+                              <div className="text-slate-800 text-sm font-semibold leading-relaxed">
+                                <MathContent content={getOptionText(activeMcq.question_text, activeMcq.correct_answer)} size="sm" />
+                              </div>
+                            </div>
+                          </div>
 
-                          <div className="space-y-2.5">
-                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
-                              <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
-                              WHY YOUR ANSWER SEEMS RIGHT
-                            </span>
-                            <div className="bg-amber-50/50 p-5 rounded-[2rem] border border-amber-100 shadow-sm">
-                              <MathContent content={exp.why_right} size="lg" />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
-                              <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
-                              THE CORRECT UNDERSTANDING
-                            </span>
-                            <div className="bg-blue-50/50 p-5 rounded-[2rem] border border-blue-100 shadow-sm">
-                              <MathContent content={exp.explanation} size="lg" />
-                            </div>
-                          </div>
-                          {exp.next_step && (
-                            <div className="space-y-2.5">
-                              <span className="text-[10px] font-black text-green-700 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
-                                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-                                WHAT TO DO NEXT
+                          {/* Section: Why Your Answer Seems Right */}
+                          <div className="relative pl-5 py-2">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400 rounded-sm" />
+                            <div className="space-y-2">
+                              <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                                <AlertTriangle size={12} strokeWidth={3} />
+                                Why Your Answer Seems Right [Misconception]
                               </span>
-                              <div className="bg-green-50/50 p-5 rounded-[2rem] border border-green-100 shadow-sm">
-                                <MathContent content={exp.next_step} size="lg" />
+                              <div className="text-slate-700 text-sm leading-[1.6] bg-amber-50/20 p-4 rounded-lg border border-amber-100/20">
+                                <MathContent content={exp.why_right} size="base" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Section: The Correct Understanding */}
+                          <div className="relative pl-5 py-2">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-sm" />
+                            <div className="space-y-2">
+                              <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                                <CheckCircle size={12} strokeWidth={3} />
+                                The Correct Understanding
+                              </span>
+                              <div className="text-slate-700 text-sm leading-[1.6] bg-blue-50/20 p-4 rounded-lg border border-blue-100/20">
+                                <MathContent content={exp.explanation} size="base" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Section: Next Step */}
+                          {exp.next_step && (
+                            <div className="relative pl-5 py-2">
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-sm" />
+                              <div className="space-y-2">
+                                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-2">
+                                  <Zap size={12} strokeWidth={3} />
+                                  What to Do Next
+                                </span>
+                                <div className="text-slate-700 text-sm leading-[1.6] bg-emerald-50/20 p-4 rounded-lg border border-emerald-100/20">
+                                  <MathContent content={exp.next_step} size="base" />
+                                </div>
                               </div>
                             </div>
                           )}
-                          <div className="space-y-2.5">
-                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
-                              <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]" />
-                              Key Concept
-                            </span>
-                            <div className="bg-indigo-50/50 p-5 rounded-[2rem] border border-indigo-100 shadow-sm">
-                              <MathContent content={exp.core_concept} size="lg" />
+
+                          {/* Section: Key Concept */}
+                          <div className="relative pl-5 py-2">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 rounded-sm opacity-30" />
+                            <div className="space-y-2">
+                              <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                                <BookOpen size={12} strokeWidth={3} />
+                                Key Concept
+                              </span>
+                              <div className="text-slate-500 text-[13px] leading-relaxed italic bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                <MathContent content={exp.core_concept} size="sm" />
+                              </div>
                             </div>
                           </div>
                         </div>
