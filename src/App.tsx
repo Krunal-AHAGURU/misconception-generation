@@ -51,11 +51,11 @@ interface MCQ {
 
 // --- Components ---
 
-const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen, voteCount, total, onFileUpload, onResetData, onClearCache }: { 
-  onShowVotes: () => void, 
-  onToggleSidebar: () => void, 
-  isSidebarOpen: boolean, 
-  voteCount: number, 
+const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen, voteCount, total, onFileUpload, onResetData, onClearCache }: {
+  onShowVotes: () => void,
+  onToggleSidebar: () => void,
+  isSidebarOpen: boolean,
+  voteCount: number,
   total: number,
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void,
   onResetData: () => void,
@@ -1029,10 +1029,23 @@ export default function App() {
                             <div className="space-y-2">
                               <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
                                 <AlertTriangle size={12} strokeWidth={3} />
-                                Why Your Answer Seems Right [Misconception]
+                                Why Your Answer Seems Right
                               </span>
                               <div className="text-slate-700 text-sm leading-[1.6] bg-amber-50/20 p-4 rounded-lg border border-amber-100/20">
                                 <MathContent content={exp.why_right} size="base" />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="relative pl-5 py-2">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400 rounded-sm" />
+                            <div className="space-y-2">
+                              <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                                <AlertTriangle size={12} strokeWidth={3} />
+                                Misconception
+                              </span>
+                              <div className="text-slate-700 text-sm leading-[1.6] bg-amber-50/20 p-4 rounded-lg border border-amber-100/20">
+                                <MathContent content={exp.misconception || "No misconception found"} size="base" />
                               </div>
                             </div>
                           </div>
