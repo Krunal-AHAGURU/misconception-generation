@@ -17,7 +17,10 @@ import {
   Hash,
   AlertTriangle,
   Zap,
-  BookOpen
+  BookOpen,
+  Upload,
+  RotateCcw,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import mcqData from './data/mcqs.json';
@@ -48,7 +51,16 @@ interface MCQ {
 
 // --- Components ---
 
-const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen, voteCount, total }: { onShowVotes: () => void, onToggleSidebar: () => void, isSidebarOpen: boolean, voteCount: number, total: number }) => (
+const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen, voteCount, total, onFileUpload, onResetData, onClearCache }: { 
+  onShowVotes: () => void, 
+  onToggleSidebar: () => void, 
+  isSidebarOpen: boolean, 
+  voteCount: number, 
+  total: number,
+  onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void,
+  onResetData: () => void,
+  onClearCache: () => void
+}) => (
   <header className="h-16 border-b border-slate-200/60 flex items-center justify-between px-6 bg-white/80 backdrop-blur-xl shrink-0 sticky top-0 z-50 shadow-sm">
     <div className="flex items-center gap-4">
       <button
@@ -81,7 +93,29 @@ const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen, voteCount, total 
         </div>
       </div>
     </div>
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-3">
+      {/* Advanced Tools */}
+      <div className="flex items-center gap-1.5 border-r border-slate-200 pr-3 mr-1">
+        <label className="p-2 hover:bg-brand/10 rounded-lg transition-all text-slate-500 hover:text-brand cursor-pointer group" title="Upload Custom JSON">
+          <Upload size={18} strokeWidth={2.5} />
+          <input type="file" accept=".json" onChange={onFileUpload} className="hidden" />
+        </label>
+        <button
+          onClick={onResetData}
+          className="p-2 hover:bg-blue-50 rounded-lg transition-all text-slate-400 hover:text-blue-600"
+          title="Reset to Default Dataset"
+        >
+          <RotateCcw size={18} strokeWidth={2.5} />
+        </button>
+        <button
+          onClick={onClearCache}
+          className="p-2 hover:bg-rose-50 rounded-lg transition-all text-slate-400 hover:text-rose-600"
+          title="Clear All Cache & Votes"
+        >
+          <Trash2 size={18} strokeWidth={2.5} />
+        </button>
+      </div>
+
       <div className="flex-col items-end hidden md:flex leading-none">
         <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest">Reviewer</span>
         <span className="text-[11px] font-bold text-slate-700 italic opacity-80">Internal Reviewer</span>
@@ -613,7 +647,6 @@ const TourGuide = ({ onComplete }: { onComplete: () => void }) => {
     </div>
   );
 };
-
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -623,15 +656,59 @@ export default function App() {
     return saved ? JSON.parse(saved) : {};
   });
 
+  // Initialize MCQs from localStorage or fallback to default
+  const [mcqDataset, setMcqDataset] = useState<MCQ[]>(() => {
+    const saved = localStorage.getItem('ag-custom-mcqs');
+    return saved ? JSON.parse(saved) : (mcqData as MCQ[]);
+  });
+
   // Sort and filter MCQs
   const sortedMcqs = useMemo(() => {
-    return [...(mcqData as MCQ[])].sort((a, b) => {
+    return [...mcqDataset].sort((a, b) => {
       const aCount = Object.keys(a.explanations || {}).length;
       const bCount = Object.keys(b.explanations || {}).length;
       if (aCount !== bCount) return bCount - aCount;
       return a.id - b.id; // Secondary sort by ID
     });
-  }, []);
+  }, [mcqDataset]);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target?.result as string);
+        if (Array.isArray(json)) {
+          localStorage.setItem('ag-custom-mcqs', JSON.stringify(json));
+          setMcqDataset(json);
+          setActiveId(json[0]?.id || 0);
+          alert('Custom MCQ dataset uploaded successfully!');
+        } else {
+          alert('Invalid format: JSON must be an array of MCQs.');
+        }
+      } catch (err) {
+        alert('Error parsing JSON file.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleResetData = () => {
+    if (confirm('Reset to default MCQ dataset? This will clear your custom upload.')) {
+      localStorage.removeItem('ag-custom-mcqs');
+      setMcqDataset(mcqData as MCQ[]);
+      setActiveId((mcqData as MCQ[])[0]?.id || 0);
+    }
+  };
+
+  const handleClearCache = () => {
+    if (confirm('Clear all cached data (votes and custom MCQs)? This action cannot be undone.')) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
 
   const [activeId, setActiveId] = useState<number>(sortedMcqs[0]?.id || 0);
   const [activeOption, setActiveOption] = useState<string>('');
@@ -771,6 +848,9 @@ export default function App() {
         isSidebarOpen={isSidebarOpen}
         voteCount={totalVoteEntries}
         total={sortedMcqs.length}
+        onFileUpload={handleFileUpload}
+        onResetData={handleResetData}
+        onClearCache={handleClearCache}
       />
 
       <main className="flex flex-1 overflow-hidden relative z-10">
