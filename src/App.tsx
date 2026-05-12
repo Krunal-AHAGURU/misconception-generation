@@ -841,26 +841,36 @@ export default function App() {
                     <div className={`flex-1 overflow-y-auto ${viewDensity === 'compact' ? 'p-3 space-y-3' : 'p-5 space-y-5'} scrollbar-thin`}>
                       {exp ? (
                         <div className="space-y-4">
-                          <div className="space-y-2">
-                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
-                              <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
-                              Explanation
-                            </span>
-                            <div className="bg-blue-50/50 p-5 rounded-[2rem] border border-blue-100 shadow-sm">
-                              <MathContent content={exp.explanation} size="lg" />
-                            </div>
-                          </div>
 
                           <div className="space-y-2.5">
                             <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
                               <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
-                              Why It Works
+                              WHY YOUR ANSWER SEEMS RIGHT
                             </span>
                             <div className="bg-amber-50/50 p-5 rounded-[2rem] border border-amber-100 shadow-sm">
                               <MathContent content={exp.why_right} size="lg" />
                             </div>
                           </div>
-
+                          <div className="space-y-2">
+                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
+                              <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
+                              THE CORRECT UNDERSTANDING
+                            </span>
+                            <div className="bg-blue-50/50 p-5 rounded-[2rem] border border-blue-100 shadow-sm">
+                              <MathContent content={exp.explanation} size="lg" />
+                            </div>
+                          </div>
+                          {exp.next_step && (
+                            <div className="space-y-2.5">
+                              <span className="text-[10px] font-black text-green-700 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
+                                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                                WHAT TO DO NEXT
+                              </span>
+                              <div className="bg-green-50/50 p-5 rounded-[2rem] border border-green-100 shadow-sm">
+                                <MathContent content={exp.next_step} size="lg" />
+                              </div>
+                            </div>
+                          )}
                           <div className="space-y-2.5">
                             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
                               <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]" />
@@ -870,18 +880,6 @@ export default function App() {
                               <MathContent content={exp.core_concept} size="lg" />
                             </div>
                           </div>
-
-                          {exp.next_step && (
-                            <div className="space-y-2.5">
-                              <span className="text-[10px] font-black text-green-700 uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white/60 backdrop-blur-md py-2 z-10">
-                                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-                                Next Step
-                              </span>
-                              <div className="bg-green-50/50 p-5 rounded-[2rem] border border-green-100 shadow-sm">
-                                <MathContent content={exp.next_step} size="lg" />
-                              </div>
-                            </div>
-                          )}
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center text-slate-300">
