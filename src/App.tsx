@@ -732,7 +732,24 @@ export default function App() {
   const questionsWithoutExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length <= 1);
 
   const activeMcq = sortedMcqs.find(q => q.id === activeId) || sortedMcqs[0];
-  const models = useMemo(() => Object.keys(activeMcq.explanations).sort(), [activeMcq.explanations]);
+  const models = useMemo(() => {
+    const keys = Object.keys(activeMcq.explanations);
+    const priorityOrder = ['gemini-flash-latest', 'openai-gpt-oss-120b:free'];
+    
+    return keys.sort((a, b) => {
+      const nameA = a.split('_').pop()?.toLowerCase() || '';
+      const nameB = b.split('_').pop()?.toLowerCase() || '';
+      
+      const indexA = priorityOrder.indexOf(nameA);
+      const indexB = priorityOrder.indexOf(nameB);
+      
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      
+      return nameA.localeCompare(nameB);
+    });
+  }, [activeMcq.explanations]);
 
   useEffect(() => {
     setActiveOption('A');
