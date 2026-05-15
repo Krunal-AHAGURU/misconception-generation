@@ -235,7 +235,7 @@ const Sidebar = ({
           </div>
           <div className="text-left">
             <span className="block text-[10px] font-black uppercase tracking-wider text-slate-600">Other Questions</span>
-            <span className="block text-[9px] font-bold text-slate-400 -mt-0.5">No AI explanations yet</span>
+            <span className="block text-[9px] font-bold text-slate-400 -mt-0.5">Insufficient explanations to compare</span>
           </div>
         </div>
         <span className="text-[10px] font-black text-slate-400 bg-slate-200/50 px-2 py-0.5 rounded-full">{emptyCount}</span>
@@ -728,11 +728,11 @@ export default function App() {
     setShowTour(false);
   };
 
-  const questionsWithExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length > 0);
-  const questionsWithoutExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length === 0);
+  const questionsWithExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length > 1);
+  const questionsWithoutExplanations = sortedMcqs.filter(q => Object.keys(q.explanations || {}).length <= 1);
 
   const activeMcq = sortedMcqs.find(q => q.id === activeId) || sortedMcqs[0];
-  const models = Object.keys(activeMcq.explanations);
+  const models = useMemo(() => Object.keys(activeMcq.explanations).sort(), [activeMcq.explanations]);
 
   useEffect(() => {
     setActiveOption('A');
