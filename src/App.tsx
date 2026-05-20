@@ -51,7 +51,7 @@ interface MCQ {
 
 // --- Components ---
 
-const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen, voteCount, total, onFileUpload, onResetData, onClearCache }: {
+const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen, voteCount, total, onFileUpload, onResetData, onClearCache, onShowInsights }: {
   onShowVotes: () => void,
   onToggleSidebar: () => void,
   isSidebarOpen: boolean,
@@ -59,7 +59,8 @@ const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen, voteCount, total,
   total: number,
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void,
   onResetData: () => void,
-  onClearCache: () => void
+  onClearCache: () => void,
+  onShowInsights: () => void
 }) => (
   <header className="h-16 border-b border-slate-200/60 flex items-center justify-between px-6 bg-white/80 backdrop-blur-xl shrink-0 sticky top-0 z-50 shadow-sm">
     <div className="flex items-center gap-4">
@@ -120,13 +121,22 @@ const Header = ({ onShowVotes, onToggleSidebar, isSidebarOpen, voteCount, total,
         <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest">Reviewer</span>
         <span className="text-[11px] font-bold text-slate-700 italic opacity-80">Internal Reviewer</span>
       </div>
-      <button
-        id="check-vote-btn"
-        onClick={onShowVotes}
-        className="bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-xl text-[11px] font-black shadow-lg shadow-brand/20 transition-all uppercase tracking-wider active:scale-95"
-      >
-        Check Results
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onShowInsights}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-[11px] font-black shadow-lg shadow-blue-500/20 transition-all uppercase tracking-wider active:scale-95"
+          title="View model statistics and insights"
+        >
+          📊 Insights
+        </button>
+        <button
+          id="check-vote-btn"
+          onClick={onShowVotes}
+          className="bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-xl text-[11px] font-black shadow-lg shadow-brand/20 transition-all uppercase tracking-wider active:scale-95"
+        >
+          Check Results
+        </button>
+      </div>
     </div>
   </header>
 );
@@ -382,6 +392,167 @@ const ImageModal = ({
     </motion.div>
   </div>
 );
+
+const ModelInsights = ({
+  questions,
+  onClose
+}: {
+  questions: MCQ[];
+  onClose: () => void;
+}) => {
+  // Calculate model statistics
+  const modelStats: Record<string, { count: number; successRate: number; completionRate: number }> = {};
+  const totalQuestions = questions.length;
+
+  questions.forEach(q => {
+    Object.keys(q.explanations || {}).forEach(modelKey => {
+      if (!modelStats[modelKey]) {
+        modelStats[modelKey] = { count: 0, successRate: 0, completionRate: 0 };
+      }
+      modelStats[modelKey].count++;
+    });
+  });
+
+  // Calculate success rates (all options have explanations)
+  Object.keys(modelStats).forEach(model => {
+    let successCount = 0;
+    questions.forEach(q => {
+      if (q.explanations[model]) {
+        const optionCount = Object.keys(q.explanations[model] || {}).length;
+        if (optionCount === (q.no_of_options || 4)) {
+          successCount++;
+        }
+      }
+    });
+    modelStats[model].successRate = Math.round((successCount / modelStats[model].count) * 100);
+    modelStats[model].completionRate = Math.round((modelStats[model].count / totalQuestions) * 100);
+  });
+
+  const sortedModels = Object.entries(modelStats)
+    .sort(([, a], [, b]) => b.count - a.count);
+
+  const topModels = sortedModels.slice(0, 2);
+  const allModelsGeneratedAll = topModels.some(([, stats]) => stats.completionRate === 100);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="relative bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+      >
+        {/* Header */}
+        <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">📊 Model Performance Insights</h2>
+            <p className="text-gray-600 font-medium text-sm mt-1">Analysis of AI model reasoning generation across {totalQuestions} questions</p>
+          </div>
+          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-500 shadow-sm border border-blue-100 text-xl">
+            📈
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-8 overflow-y-auto space-y-8">
+          {/* Key Findings */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">🎯 Key Findings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {allModelsGeneratedAll && (
+                <div className="p-4 rounded-xl bg-green-50 border-2 border-green-200">
+                  <div className="text-sm font-bold text-green-900 mb-1">✅ Full Coverage Achieved</div>
+                  <p className="text-xs text-green-700">Top models successfully generated explanations for all {totalQuestions} questions without any gaps.</p>
+                </div>
+              )}
+              <div className="p-4 rounded-xl bg-blue-50 border-2 border-blue-200">
+                <div className="text-sm font-bold text-blue-900 mb-1">📊 {Object.keys(modelStats).length} Models Compared</div>
+                <p className="text-xs text-blue-700">In total, {Object.keys(modelStats).length} different AI models generated reasoning for MCQ options in this dataset.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Model Performance Table */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">📋 Model-Wise Breakdown</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-gray-200 bg-gray-50">
+                    <th className="text-left px-4 py-3 text-xs font-black text-gray-600 uppercase">Model Name</th>
+                    <th className="text-center px-4 py-3 text-xs font-black text-gray-600 uppercase">Questions</th>
+                    <th className="text-center px-4 py-3 text-xs font-black text-gray-600 uppercase">Coverage</th>
+                    <th className="text-center px-4 py-3 text-xs font-black text-gray-600 uppercase">Completion</th>
+                    <th className="text-left px-4 py-3 text-xs font-black text-gray-600 uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedModels.map(([modelKey, stats], idx) => {
+                    const modelName = modelKey.split('_').pop()?.replace(/-/g, ' ').toUpperCase() || modelKey;
+                    const isBest = idx < 2 && stats.completionRate === 100;
+                    return (
+                      <tr key={modelKey} className={`border-b border-gray-100 ${isBest ? 'bg-yellow-50' : 'hover:bg-gray-50'} transition-colors`}>
+                        <td className="px-4 py-3 text-sm font-bold text-gray-900">{modelName}</td>
+                        <td className="text-center px-4 py-3">
+                          <span className="inline-block px-3 py-1 bg-blue-100 text-blue-900 rounded-full text-xs font-bold">{stats.count}</span>
+                        </td>
+                        <td className="text-center px-4 py-3">
+                          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 transition-all" style={{ width: `${stats.completionRate}%` }} />
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1 font-bold">{stats.completionRate}%</div>
+                        </td>
+                        <td className="text-center px-4 py-3 font-bold text-gray-900">{stats.successRate}%</td>
+                        <td className="px-4 py-3">
+                          {stats.completionRate === 100 ? (
+                            <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">✅ All Done</span>
+                          ) : (
+                            <span className="text-xs font-bold text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full">⚠️ Partial</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Explanation in Layman's Terms */}
+          <div className="space-y-3 p-4 rounded-xl bg-indigo-50 border border-indigo-200">
+            <h3 className="text-xs font-black text-indigo-900 uppercase tracking-widest">💡 What This Means</h3>
+            <div className="space-y-2 text-sm text-indigo-800 leading-relaxed">
+              <p><strong>Questions:</strong> Total number of MCQs each model was asked to provide explanations for.</p>
+              <p><strong>Coverage:</strong> What percentage of all questions this model covered (out of {totalQuestions} total).</p>
+              <p><strong>Completion Rate:</strong> When a model covers a question, this shows what percentage of all answer options it provided complete explanations for.</p>
+              <p><strong>Status:</strong> "All Done" means the model generated explanations for every question and every option. "Partial" means some questions or options are missing.</p>
+              {allModelsGeneratedAll && (
+                <p className="font-bold text-green-700 bg-green-100 px-3 py-2 rounded">🎉 <strong>Top performers (Gemini Flash & OpenAI GPT) successfully generated all explanations with 100% coverage!</strong> This means they didn't fail on any questions and completed every option.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 pb-6 border-t border-gray-100 pt-4">
+          <button
+            onClick={onClose}
+            className="w-full px-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-all shadow-lg shadow-blue-100"
+          >
+            Close Insights
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const VoteSummary = ({
   votes,
@@ -716,6 +887,7 @@ export default function App() {
   const [selectedImage, setSelectedImage] = useState<{ src: string; isBase64: boolean; index: number; total: number } | null>(null);
 
   const [showEmpty, setShowEmpty] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
   const [viewDensity, setViewDensity] = useState<'comfortable' | 'compact'>('comfortable');
   const [topHeight, setTopHeight] = useState(30); // 30% default
   const [isResizing, setIsResizing] = useState(false);
@@ -868,6 +1040,7 @@ export default function App() {
         onFileUpload={handleFileUpload}
         onResetData={handleResetData}
         onClearCache={handleClearCache}
+        onShowInsights={() => setShowInsights(true)}
       />
 
       <main className="flex flex-1 overflow-hidden relative z-10">
@@ -1200,6 +1373,12 @@ export default function App() {
               setShowSummary(false);
             }}
             questions={mcqData as MCQ[]}
+          />
+        )}
+        {showInsights && (
+          <ModelInsights
+            questions={sortedMcqs}
+            onClose={() => setShowInsights(false)}
           />
         )}
         {selectedImage && (

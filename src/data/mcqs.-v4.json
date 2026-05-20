@@ -347,40 +347,6 @@
           "core_concept": "Euclid's Division Lemma",
           "next_step": "Remember that '0' is a very important part of the remainder range for any exact division."
         }
-      },
-      "openrouter_deepseek-deepseek-v4-flash:free": {
-        "A": {
-          "correctFlag": true,
-          "explanation": "According to Euclid's division lemma, for a division by 4, the remainder r must be between 0 (inclusive) and 4 (exclusive).",
-          "why_right": "Yes, this is the correct choice! The remainder must be non-negative and less than the divisor.",
-          "misconception": null,
-          "core_concept": "Euclid's division lemma: remainder range",
-          "next_step": "Always remember the remainder condition: 0 ≤ r < divisor."
-        },
-        "B": {
-          "correctFlag": false,
-          "explanation": "This condition excludes r=0 and r=1, but remainder can be 0 or 1 as well.",
-          "why_right": "You might feel this is correct because you think the remainder should be strictly greater than 0, but actually it can be zero.",
-          "misconception": "You might be assuming the remainder is always positive.",
-          "core_concept": "Remainder can be zero",
-          "next_step": "Check if remainder can be zero in division problems."
-        },
-        "C": {
-          "correctFlag": false,
-          "explanation": "This includes r=4, but remainder must be less than the divisor, so r cannot equal 4.",
-          "why_right": "It's tempting to choose this because you might think ≤ includes all possibilities, but the remainder must be strictly less than the divisor.",
-          "misconception": "You may have missed that the remainder cannot be equal to the divisor.",
-          "core_concept": "Remainder < divisor",
-          "next_step": "Double-check the inequality signs: remainder is less than divisor, not less than or equal."
-        },
-        "D": {
-          "correctFlag": false,
-          "explanation": "This excludes r=0 and includes r=4, both incorrect.",
-          "why_right": "You probably thought the remainder must be positive and can be equal to the divisor, but it should be non-negative and less than divisor.",
-          "misconception": "You might have confused the conditions by combining two incorrect ideas.",
-          "core_concept": "Remainder range: 0 ≤ r < divisor",
-          "next_step": "Recall the exact condition from Euclid's division lemma."
-        }
       }
     }
   },
@@ -648,40 +614,6 @@
           "misconception": null,
           "core_concept": "HCF of Prime Factors",
           "next_step": "Keep applying the 'lowest power' method for HCF problems—it works perfectly every time!"
-        }
-      },
-      "openrouter_deepseek-deepseek-v4-flash:free": {
-        "A": {
-          "correctFlag": false,
-          "explanation": "HCF takes the smallest power of each common prime. For 2, min(3,2)=2; for 3, min(2,1)=1; for 5, min(4,3)=3. So HCF = 2^2 * 3 * 5^3 = 1500. Option A is 600 = 2^3 * 3 * 5^2, which uses the exponent of 2 from a (3) instead of the minimum (2), and exponent of 5 is 2 instead of 3.",
-          "why_right": "You might have picked the product of all primes with the larger exponents, like multiplying the numbers directly, but HCF uses the smallest ones.",
-          "misconception": "You may have taken the larger exponent for each prime instead of the smaller one.",
-          "core_concept": "HCF uses minimum exponents of common primes.",
-          "next_step": "Always compare exponents and take the smaller one for each common prime."
-        },
-        "B": {
-          "correctFlag": false,
-          "explanation": "For HCF, we need 5^3 (since min exponent for 5 is 3), but 300 has only 5^2. So it's missing one factor of 5.",
-          "why_right": "I guess you thought the HCF would be smaller, but you forgot to include all the common prime factors with their full minimum powers.",
-          "misconception": "You might have thought that the HCF is simply the common factors without accounting for the highest exponent that is common to both.",
-          "core_concept": "HCF includes each common prime raised to the smallest exponent present in both numbers.",
-          "next_step": "Double-check that you've taken the minimum exponent for each prime, not just the prime itself."
-        },
-        "C": {
-          "correctFlag": false,
-          "explanation": "HCF requires 2^2 (since min exponent for 2 is 2), but 3000 has 2^3, which is larger. So it's not the highest common factor; it's actually a multiple of the HCF.",
-          "why_right": "You might have thought that since 2 appears in both, you need the larger power, but HCF uses the smaller common power.",
-          "misconception": "You may have confused HCF with LCM; LCM takes the maximum exponent, but HCF takes the minimum.",
-          "core_concept": "HCF takes the minimum exponent, LCM takes the maximum.",
-          "next_step": "Remember: For HCF, think 'lowest common power'; for LCM, think 'highest common power'."
-        },
-        "D": {
-          "correctFlag": true,
-          "explanation": "Correct. Taking minimum exponents: 2^2, 3^1, 5^3 gives 4*3*125 = 1500.",
-          "why_right": "Yes, this is the correct choice! You took the smallest exponents correctly and got 1500.",
-          "misconception": null,
-          "core_concept": "HCF = product of primes with minimum exponents.",
-          "next_step": "Practice a few more HCF problems using prime factorization to reinforce the idea."
         }
       }
     }
@@ -1717,40 +1649,6 @@
           "core_concept": "Coulomb's Law",
           "next_step": "Make sure to convert all units (like cm to m) before doing the final calculation."
         }
-      },
-      "openrouter_deepseek-deepseek-v4-flash:free": {
-        "A": {
-          "correctFlag": false,
-          "explanation": "Using Coulomb's law, the product of the charges must be 10 μC² (since F = k q₁q₂/r²). 3.5×3.5 = 12.25, which is too large, so the force would be greater than 1 N.",
-          "why_right": "It's tempting to choose this because the sum is exactly 7 and equal charges seem fair, but the force depends on product, not just sum.",
-          "misconception": "You may be assuming equal charges are the only solution when sum is fixed.",
-          "core_concept": "Coulomb's law: force depends on product of charges.",
-          "next_step": "Always set up equations using both sum and product from force."
-        },
-        "B": {
-          "correctFlag": true,
-          "explanation": "Yes, 2 μC and 5 μC sum to 7 μC and their product is 10 μC², which exactly matches the product required by Coulomb's law for the given force and distance.",
-          "why_right": "Great job — this matches the concept correctly.",
-          "misconception": null,
-          "core_concept": "Coulomb's law and solving quadratic equations.",
-          "next_step": "Practice solving for two charges given sum and product."
-        },
-        "C": {
-          "correctFlag": false,
-          "explanation": "3×4 = 12 μC², which is greater than the required 10 μC². So the force would be >1 N, not 1 N.",
-          "why_right": "You might feel this is right because 3 and 4 are common numbers that add to 7, but product is too large.",
-          "misconception": "You probably thought any pair summing to 7 works, but forgot the force equation.",
-          "core_concept": "Force depends on product of charges.",
-          "next_step": "When solving, always compute product from F and r."
-        },
-        "D": {
-          "correctFlag": false,
-          "explanation": "2.5×4.5 = 11.25 μC², not 10 μC². So the force would be slightly larger than 1 N.",
-          "why_right": "This looks plausible because 2.5 and 4.5 sum to 7 and are not equal, but the product is still off.",
-          "misconception": "You may have approximated but the exact product must match 10 μC².",
-          "core_concept": "Exact product from Coulomb's law.",
-          "next_step": "Calculate product precisely using F, r, and k."
-        }
       }
     }
   },
@@ -2116,40 +2014,6 @@
           "misconception": null,
           "core_concept": "Coulomb's Law ($F \\propto 1/r^2$)",
           "next_step": "Keep practicing cases where distance is doubled or halved to master the square-law relationship."
-        }
-      },
-      "openrouter_deepseek-deepseek-v4-flash:free": {
-        "A": {
-          "correctFlag": false,
-          "explanation": "Coulomb's law says force is inversely proportional to the square of the distance. When distance is reduced to d/3, the force multiplies by 9, so it should increase to 27 N, not decrease to 1 N.",
-          "why_right": "It's tempting to choose this because you might think decreasing distance always decreases force, but actually the opposite happens here.",
-          "misconception": "You may be assuming force and distance are directly proportional, but it's actually inverse square.",
-          "core_concept": "Coulomb's law (inverse square)",
-          "next_step": "Remember: F ∝ 1/r², so smaller distance means much larger force."
-        },
-        "B": {
-          "correctFlag": false,
-          "explanation": "Force depends on distance. According to Coulomb's law, changing the separation changes the force. Here, reducing distance increases force, so it can't stay 3 N.",
-          "why_right": "You might feel this is right because the charges themselves haven't changed, but distance plays a key role in the force strength.",
-          "misconception": "You probably thought force depends only on charge amounts, ignoring the distance factor.",
-          "core_concept": "Coulomb's law (dependence on distance)",
-          "next_step": "Always check how distance changes when solving force problems."
-        },
-        "C": {
-          "correctFlag": false,
-          "explanation": "The distance becomes one-third, so the force becomes 9 times the original (since (1/3)² = 1/9, so force ×9). But 9 times 3 N is 27 N, not 9 N.",
-          "why_right": "A common mistake here is to think that the multiplier (9) is the answer, forgetting to multiply it by the original force of 3 N.",
-          "misconception": "You may have correctly found the factor of 9 but forgot to apply it to the initial force.",
-          "core_concept": "Coulomb's law (scaling factor)",
-          "next_step": "After finding the factor, always multiply it by the original force."
-        },
-        "D": {
-          "correctFlag": true,
-          "explanation": "Coulomb's law: F = k q1 q2 / r². When r becomes d/3, new force = 9 × original = 9 × 3 = 27 N. That's correct!",
-          "why_right": "Yes, this is the correct choice! You've applied the inverse square law accurately.",
-          "misconception": null,
-          "core_concept": "Coulomb's law (inverse square)",
-          "next_step": "Practice similar problems with different distance changes to reinforce the concept."
         }
       }
     }
@@ -3763,8 +3627,7 @@
         }
       }
     }
-  },
-  {
+  },{
     "id": 163036,
     "question_text": "Calculate the approximate inductance of an air-core solenoid containing 400 turns if the length of the solenoid is 25 cm and its cross-sectional area is \\(4 cm^2\\).\n\n\n\n(A)    \\(3.2\\times {{10}^{-3}}\\text{  H}\\)\n\n\n\n(B)    \\(3.2\\times {{10}^{-4}}\\text{  H}\\)\n\n\n\n(C)    \\(3.2\\times {{10}^{-5}}\\text{  H}\\)\n\n\n\n(D)    \\(3.2\\times {{10}^{-6}}\\text{  H}\\)\n\n ",
     "solution_text": "",
